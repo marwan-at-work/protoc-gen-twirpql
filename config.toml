@@ -1,0 +1,51 @@
+baseURL = "/"
+languageCode = "en-us"
+title = "TWIRPQL"
+themesDir = "themes"
+theme = "hugo-whisper-theme"
+publishDir = "public"
+canonifyURLs = true
+
+pygmentsCodeFences = true
+pygmentsCodefencesGuessSyntax = false
+pygmentsUseClasses = false
+
+[context.production.environment]
+  HUGO_VERSION = "0.53"
+
+[context.deploy-preview.environment]
+  HUGO_VERSION = "0.53"
+
+[[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 1
+
+[[menu.main]]
+    name = "Docs"
+    url = "/docs/"
+    weight = 2
+
+[params]
+  google_analytics_id=""
+  homepage_button_link = '/docs'
+  homepage_button_text = 'Read The Docs'
+  homepage_intro = 'TWIRPQL puts a GraphQL layer on top of your Twirp servers'
+  # homepage_image = '/images/terminal.gif'
+
+  [params.homepage_meta_tags]
+    meta_description = "TWIRPQL puts a GraphQL layer on top of your Twirp servers"
+    meta_og_title = "Hugo Whisper Theme"
+    meta_og_type = "website"
+    meta_og_url = "https://hugo-whisper.netlify.com"
+    meta_og_image = "https://raw.githubusercontent.com/JugglerX/hugo-whisper-theme/master/images/tn.png"
+    meta_og_description = "TWIRPQL puts a GraphQL layer on top of your Twirp servers"
+    meta_twitter_card = "summary"
+    meta_twitter_site = "@MarwanSulaiman"
+    meta_twitter_creator = "@MarwanSulaiman"
+
+  [params.logo]
+      # mobile = "/images/logo-mobile.svg"
+      # standard  = "/images/logo.svg"
+      mobile = "/img/logo1.png"
+      standard = "/img/logo1.png"

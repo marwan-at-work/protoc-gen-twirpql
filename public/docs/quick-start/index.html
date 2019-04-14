@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Quick Start - TWIRPQL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link rel="icon" href="/favicon.png">
+
+  
+  
+  <link rel="stylesheet" href="/css/style.min.bc568545ab6e059ea0773756ac462917af8724efd75961df2c5034d12b108a5a.css">
+  
+
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-home">
+      <a href="/">
+        <span>Home</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-docs">
+      <a href="/docs/">
+        <span>Docs</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img alt="Logo" src="/img/logo1.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img alt="Logo" src="/img/logo1.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    <li class="menu-item-home">
+      <a href="/">
+        <span>Home</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-docs">
+      <a href="/docs/">
+        <span>Docs</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+
+    
+    
+    
+    
+    
+    
+
+    
+    <div class="container pt-2 pt-md-6 pb-3 pb-md-6">
+      <div class="row">
+        <div class="col-12 col-md-3 mb-3">
+          <div class="sidebar">
+            
+<div class="docs-menu">
+  <h4>Docs</h4>
+  <ul>
+    
+    <li class="">
+      <a href="/docs/install/">Install TWIRPQL</a>
+    </li>
+    
+    <li class="active ">
+      <a href="/docs/quick-start/">Quick Start</a>
+    </li>
+    
+  </ul>
+</div>
+
+          </div>
+        </div>
+        <div class="col-12 col-md-9">
+          
+<h1 class="title">Quick Start</h1>
+<div class="content">
+  
+
+<p>Once you installed all the required depepndencies, this page will guide you through an end-to-end example.</p>
+
+<h3 id="create-a-new-project">Create a new project</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ export GO111MODULE<span style="color:#f92672">=</span>on <span style="color:#75715e"># no need to do this if you ar eoutside of GOPATH</span>
+~ mkdir hello <span style="color:#f92672">&amp;&amp;</span> cd hello <span style="color:#f92672">&amp;&amp;</span> go mod init hello</code></pre></div>
+<h3 id="define-your-twirp-service">Define your Twirp Service</h3>
+
+<p>Create a file named <code>service.proto</code> and populate it with the following:</p>
+
+<pre><code>syntax = &quot;proto3&quot;;
+package hello;
+option go_package = &quot;hello&quot;;
+
+service Service {
+  rpc Hello(HelloReq) returns (HelloResp);
+}
+
+message HelloReq {
+  string name = 1;
+}
+
+message HelloResp {
+  string text = 1;
+}
+</code></pre>
+
+<h3 id="generate-go-twirp-files">Generate Go/Twirp Files</h3>
+
+<p>Before you can generate a TWIRPQL layer, you need to generate the <code>.pb.go</code> and <code>.twirp.go</code> files so that we have the contract defined:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ protoc --go_out<span style="color:#f92672">=</span>. --twirp_out<span style="color:#f92672">=</span>. service.proto</code></pre></div>
+<h3 id="implement-the-twirp-server">Implement the Twirp server</h3>
+
+<p>Let&rsquo;s make a new sub-package called <code>server</code> and implement the twirp server in it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ mkdir server</code></pre></div>
+<p>Create a main.go file inside <code>server</code> and paste the following inside it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;context&#34;</span>
+	<span style="color:#e6db74">&#34;hello&#34;</span>
+	<span style="color:#e6db74">&#34;net/http&#34;</span>
+)
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">service</span> <span style="color:#66d9ef">struct</span>{}
+
+<span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">s</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">service</span>) <span style="color:#a6e22e">Hello</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">req</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">hello</span>.<span style="color:#a6e22e">HelloReq</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">hello</span>.<span style="color:#a6e22e">HelloResp</span>, <span style="color:#66d9ef">error</span>) {
+	<span style="color:#66d9ef">return</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">hello</span>.<span style="color:#a6e22e">HelloResp</span>{<span style="color:#a6e22e">Text</span>: <span style="color:#a6e22e">req</span>.<span style="color:#a6e22e">GetName</span>()}, <span style="color:#66d9ef">nil</span>
+}
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+    <span style="color:#a6e22e">serviceImpl</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">service</span>{}
+    <span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#e6db74">&#34;/&#34;</span>, <span style="color:#a6e22e">hello</span>.<span style="color:#a6e22e">NewServiceServer</span>(<span style="color:#a6e22e">serviceImpl</span>, <span style="color:#66d9ef">nil</span>))
+
+    <span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">ListenAndServe</span>(<span style="color:#e6db74">&#34;:9090&#34;</span>, <span style="color:#66d9ef">nil</span>)
+}</code></pre></div>
+<h3 id="run-and-test-the-twirp-server">Run and test the Twirp server</h3>
+
+<ol>
+<li><code>go run server/main.go</code></li>
+<li>From another terminal run: <code>~ curl -X POST -d '{&quot;name&quot;: &quot;twirpql&quot;}' -H 'Content-Type: application/json' localhost:9090/twirp/hello.Service/Hello</code></li>
+</ol>
+
+<h3 id="create-the-twirpql-layer">Create the TWIRPQL layer</h3>
+
+<p>Now that we verified we have a Twirp server working, let&rsquo;s create the TWIRPQL layer on top of it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># ctrl+c to stop the server, then:</span>
+~ protoc --twirpql_out<span style="color:#f92672">=</span>. service.proto</code></pre></div>
+<p>This will create a new subdirectory called <code>twirpql</code> with all the necessary files to import a GraphQL layer on top of our Hello service.</p>
+
+<h3 id="update-server-main-go-to-use-the-new-graphql-layer">Update server/main.go to use the new GraphQL layer</h3>
+
+<p>Update our main.go file to look like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;context&#34;</span>
+	<span style="color:#e6db74">&#34;hello&#34;</span>
+	<span style="color:#e6db74">&#34;hello/twirpql&#34;</span>
+	<span style="color:#e6db74">&#34;net/http&#34;</span>
+)
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">service</span> <span style="color:#66d9ef">struct</span>{}
+
+<span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">s</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">service</span>) <span style="color:#a6e22e">Hello</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">req</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">hello</span>.<span style="color:#a6e22e">HelloReq</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">hello</span>.<span style="color:#a6e22e">HelloResp</span>, <span style="color:#66d9ef">error</span>) {
+	<span style="color:#66d9ef">return</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">hello</span>.<span style="color:#a6e22e">HelloResp</span>{<span style="color:#a6e22e">Text</span>: <span style="color:#a6e22e">req</span>.<span style="color:#a6e22e">GetName</span>()}, <span style="color:#66d9ef">nil</span>
+}
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+    <span style="color:#a6e22e">serviceImpl</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">service</span>{}
+	<span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#e6db74">&#34;/&#34;</span>, <span style="color:#a6e22e">hello</span>.<span style="color:#a6e22e">NewServiceServer</span>(<span style="color:#a6e22e">serviceImpl</span>, <span style="color:#66d9ef">nil</span>))
+	<span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#e6db74">&#34;/query&#34;</span>, <span style="color:#a6e22e">twirpql</span>.<span style="color:#a6e22e">Handler</span>(<span style="color:#a6e22e">serviceImpl</span>, <span style="color:#66d9ef">nil</span>))
+	<span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#e6db74">&#34;/play&#34;</span>, <span style="color:#a6e22e">twirpql</span>.<span style="color:#a6e22e">Playground</span>(<span style="color:#e6db74">&#34;twirp&#34;</span>, <span style="color:#e6db74">&#34;/query&#34;</span>))
+
+	<span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">ListenAndServe</span>(<span style="color:#e6db74">&#34;:9090&#34;</span>, <span style="color:#66d9ef">nil</span>)
+}</code></pre></div>
+<p>As you can see, we only had to add 3 lines of code:</p>
+
+<ol>
+<li>We imported the newly created subpackage <code>&quot;hello/twirpql&quot;</code></li>
+<li>We created a <code>/query</code> endpoint and called <code>twirpql.Handler</code> which knows to take your Twirp Service implementation and returns a GraphQL http.Handler.</li>
+<li>We created a <code>/play</code> endpoint which exposes a <em>GraphiQL</em> UI to discover and play with the Twirp service.</li>
+</ol>
+
+<h3 id="rerun-the-server-and-explore-the-ui">Rerun the server and explore the UI</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ go run server/main.go</code></pre></div>
+<p>And navigate to the <a href="http://localhost:9090/play">localhost:9090/play</a> on the browser:</p>
+
+<p><a href="/twirpql/img/graphiql.png">
+<img src="/twirpql/img/graphiql.png" alt="Graphiql Image" />
+</a></p>
+
+<p>You can now use GraphQL to make queries back to the Twirp Service as you see in the screenshot above.</p>
+
+</div>
+</div>
+
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          <ul>
+            <li class="zerostatic"><a href="https://marwan.io">marwan.io</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.bf1e1f7ae8e03db5f012356e825843facdff51c0a559cb0d27fe2bbe1db405c2.js"></script>
+  
+
+  
+  
+  
+    
+  
+
+
+</body>
+
+</html>
