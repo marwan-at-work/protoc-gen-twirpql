@@ -1,0 +1,43 @@
+syntax = "proto3";
+package multitypes;
+option go_package = "multitipes";
+
+service Service {
+    rpc Hello(HelloReq) returns (HelloResp);
+    rpc Bye(ByeReq) returns (ByeResp);
+}
+
+message HelloReq {
+    string one = 1;
+    bool two = 2;
+    repeated string three = 3;
+    repeated bool four = 4;
+}
+
+message HelloResp {
+    string one = 1;
+    bool two = 2;
+    repeated string three = 3;
+    repeated bool four = 4;
+}
+
+message ByeReq {
+    int64 one = 1;
+    int32 two = 2;
+    repeated int64 three = 3;
+    repeated int64 four = 4;
+}
+
+message ByeResp {
+    int64 one = 1;
+    int32 two = 2;
+    repeated int64 three = 3;
+    repeated int64 four = 4;
+    Traffic traffic = 5;
+}
+
+enum Traffic {
+    GREEN = 0;
+    YELLOW = 1;
+    RED = 2;
+}

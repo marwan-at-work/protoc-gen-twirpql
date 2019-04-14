@@ -1,0 +1,12 @@
+syntax = "proto3";
+package mixed;
+option go_package = "mixed";
+
+service Service {
+    rpc Hello(HelloMsg) returns (HelloMsg);
+}
+
+message HelloMsg {
+    string text = 1;
+    bool OK = 2;
+}

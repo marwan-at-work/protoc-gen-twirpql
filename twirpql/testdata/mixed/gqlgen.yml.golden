@@ -1,0 +1,16 @@
+schema:
+- twirpql/schema.graphql
+exec:
+  filename: twirpql/generated.go
+model:
+  filename: twirpql/models_gen.go
+resolver:
+  filename: twirpql/resolver.go
+  type: Resolver
+models:
+  HelloMsg:
+    model:
+    - mixed.HelloMsg
+  HelloMsgInput:
+    model:
+    - mixed.HelloMsg

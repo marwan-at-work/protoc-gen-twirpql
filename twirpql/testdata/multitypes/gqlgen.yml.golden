@@ -1,0 +1,25 @@
+schema:
+- twirpql/schema.graphql
+exec:
+  filename: twirpql/generated.go
+model:
+  filename: twirpql/models_gen.go
+resolver:
+  filename: twirpql/resolver.go
+  type: Resolver
+models:
+  ByeReq:
+    model:
+    - multitypes.ByeReq
+  ByeResp:
+    model:
+    - multitypes.ByeResp
+  HelloReq:
+    model:
+    - multitypes.HelloReq
+  HelloResp:
+    model:
+    - multitypes.HelloResp
+  Traffic:
+    model:
+    - multitypes.Traffic

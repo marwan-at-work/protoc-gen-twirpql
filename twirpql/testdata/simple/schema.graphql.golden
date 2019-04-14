@@ -1,0 +1,15 @@
+schema {
+	query: Query
+}
+
+type Query {
+	Hello(req: HelloReq): HelloResp!
+}
+
+type HelloResp {
+	text: String!
+}
+
+input HelloReq {
+	name: String!
+}

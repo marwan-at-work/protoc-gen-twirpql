@@ -1,0 +1,11 @@
+syntax = "proto3";
+package second;
+option go_package = "multifile";
+
+message SecondReq {
+    string second = 1;
+}
+
+message SecondResp {
+    string second = 1;
+}

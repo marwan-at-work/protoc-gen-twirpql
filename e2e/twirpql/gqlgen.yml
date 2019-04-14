@@ -1,0 +1,25 @@
+schema:
+- twirpql/schema.graphql
+exec:
+  filename: twirpql/generated.go
+model:
+  filename: twirpql/models_gen.go
+resolver:
+  filename: twirpql/resolver.go
+  type: Resolver
+models:
+  HelloReq:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.HelloReq
+  HelloResp:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.HelloResp
+  TrafficJamReq:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.TrafficJamReq
+  TrafficJamResp:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.TrafficJamResp
+  TrafficLight:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.TrafficLight

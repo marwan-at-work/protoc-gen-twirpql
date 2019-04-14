@@ -1,0 +1,15 @@
+syntax = "proto3";
+package noinput;
+option go_package = "noinput";
+
+service Service {
+  rpc Hello(HelloReq) returns (HelloResp);
+}
+
+message HelloReq {
+
+}
+
+message HelloResp {
+  string text = 1;
+}

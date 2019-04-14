@@ -1,0 +1,20 @@
+schema {
+	query: Query
+}
+
+type Query {
+	Hello: HelloResp!
+	Second(req: SecondReq): SecondResp!
+}
+
+type HelloResp {
+	text: String!
+}
+
+type SecondResp {
+	second: String!
+}
+
+input SecondReq {
+	second: String!
+}

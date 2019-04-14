@@ -1,0 +1,17 @@
+schema {
+	query: Query
+}
+
+type Query {
+	Hello(req: HelloMsgInput): HelloMsg!
+}
+
+type HelloMsg {
+	text: String!
+	OK: Boolean!
+}
+
+input HelloMsgInput {
+	text: String!
+	OK: Boolean!
+}

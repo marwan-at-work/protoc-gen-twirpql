@@ -1,0 +1,17 @@
+syntax = "proto3";
+package multifile;
+option go_package = "multifile";
+import "second.proto";
+
+service Service {
+    rpc Hello(HelloReq) returns (HelloResp);
+    rpc Second(second.SecondReq) returns (second.SecondResp);
+}
+
+message HelloReq {
+
+}
+
+message HelloResp {
+    string text = 1;
+}

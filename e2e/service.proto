@@ -1,0 +1,30 @@
+syntax = "proto3";
+package e2e;
+option go_package = "e2e";
+
+service Service {
+  rpc Hello(HelloReq) returns (HelloResp);
+  rpc TrafficJam(TrafficJamReq) returns (TrafficJamResp);
+}
+
+message HelloReq {
+  string name = 1;
+}
+
+message HelloResp {
+  string text = 1;
+}
+
+message TrafficJamReq {
+  TrafficLight color = 1;
+}
+
+enum TrafficLight {
+  RED = 0;
+  YELLOW = 1;
+  GREEN = 2;
+}
+
+message TrafficJamResp {
+  TrafficLight next = 1;
+}

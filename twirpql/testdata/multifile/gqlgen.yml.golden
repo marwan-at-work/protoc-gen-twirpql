@@ -1,0 +1,19 @@
+schema:
+- twirpql/schema.graphql
+exec:
+  filename: twirpql/generated.go
+model:
+  filename: twirpql/models_gen.go
+resolver:
+  filename: twirpql/resolver.go
+  type: Resolver
+models:
+  HelloResp:
+    model:
+    - multifile.HelloResp
+  SecondReq:
+    model:
+    - multifile.SecondReq
+  SecondResp:
+    model:
+    - multifile.SecondResp

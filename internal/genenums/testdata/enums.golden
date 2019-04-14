@@ -1,0 +1,26 @@
+package twirpql
+
+import (
+	"context"
+	"errors"
+
+	"github.com/99designs/gqlgen/graphql"
+	"github.com/vektah/gqlparser/ast"
+	"pkg.go/enums"
+)
+
+func (ec *executionContext) _one(ctx context.Context, sel ast.SelectionSet, v *enums.one) graphql.Marshaler {
+	return graphql.MarshalString((*v).String())
+}
+
+func (ec *executionContext) unmarshalInputone(ctx context.Context, v interface{}) (enums.one, error) {
+	switch v := v.(type) {
+	case string:
+		intValue, ok := enums.one_value[v]
+		if !ok {
+			return 0, errors.New("unknown value: " + v)
+		}
+		return enums.one(intValue), nil
+	}
+	return 0, errors.New("wrong type")
+}

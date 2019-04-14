@@ -1,0 +1,30 @@
+schema {
+	query: Query
+}
+
+type Query {
+	Hello(req: HelloReq): HelloResp!
+	TrafficJam(req: TrafficJamReq): TrafficJamResp!
+}
+
+type HelloResp {
+	text: String!
+}
+
+type TrafficJamResp {
+	next: TrafficLight!
+}
+
+input HelloReq {
+	name: String!
+}
+
+input TrafficJamReq {
+	color: TrafficLight!
+}
+
+enum TrafficLight {
+	RED
+	YELLOW
+	GREEN
+}
