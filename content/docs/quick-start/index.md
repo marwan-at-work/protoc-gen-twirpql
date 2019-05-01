@@ -143,3 +143,16 @@ And navigate to the [localhost:9090/play](http://localhost:9090/play) on the bro
 
 
 You can now use GraphQL to make queries back to the Twirp Service as you see in the screenshot above. 
+
+### Pro Tip
+
+To make re-generation easier, create a `gen.go` file in your project's root directory with the following content: 
+
+```golang
+package hello
+
+//go:generate protoc --go_out=. --twirp_out=. service.proto
+//go:generate protoc --twirpql_out=. service.proto
+```
+
+Then, whenever you update `service.proto`, all you have to do is run `go generate` from the root directory. 
