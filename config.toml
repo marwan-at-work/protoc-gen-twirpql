@@ -35,10 +35,10 @@ pygmentsUseClasses = false
 
   [params.homepage_meta_tags]
     meta_description = "TWIRPQL puts a GraphQL layer on top of your Twirp servers"
-    meta_og_title = "Hugo Whisper Theme"
+    meta_og_title = "TwirpQL"
     meta_og_type = "website"
-    meta_og_url = "https://hugo-whisper.netlify.com"
-    meta_og_image = "https://raw.githubusercontent.com/JugglerX/hugo-whisper-theme/master/images/tn.png"
+    meta_og_url = "https://twirpql.dev"
+    meta_og_image = "https://twirpql.dev/img/logo1.png"
     meta_og_description = "TWIRPQL puts a GraphQL layer on top of your Twirp servers"
     meta_twitter_card = "summary"
     meta_twitter_site = "@MarwanSulaiman"
