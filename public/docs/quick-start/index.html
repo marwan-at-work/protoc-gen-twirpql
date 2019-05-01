@@ -98,6 +98,10 @@
       <a href="/docs/quick-start/">Quick Start</a>
     </li>
     
+    <li class="">
+      <a href="/docs/types/types/">Types</a>
+    </li>
+    
   </ul>
 </div>
 
@@ -216,11 +220,20 @@ message HelloResp {
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ go run server/main.go</code></pre></div>
 <p>And navigate to the <a href="http://localhost:9090/play">localhost:9090/play</a> on the browser:</p>
 
-<p><a href="/twirpql/img/graphiql.png">
-<img src="/twirpql/img/graphiql.png" alt="Graphiql Image" />
+<p><a href="/img/graphiql.png">
+<img src="/img/graphiql.png" alt="Graphiql Image" />
 </a></p>
 
 <p>You can now use GraphQL to make queries back to the Twirp Service as you see in the screenshot above.</p>
+
+<h3 id="pro-tip">Pro Tip</h3>
+
+<p>To make re-generation easier, create a <code>gen.go</code> file in your project&rsquo;s root directory with the following content:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#f92672">package</span> <span style="color:#a6e22e">hello</span>
+
+<span style="color:#75715e">//go:generate protoc --go_out=. --twirp_out=. service.proto
+</span><span style="color:#75715e"></span><span style="color:#f92672">//</span><span style="color:#66d9ef">go</span>:<span style="color:#a6e22e">generate</span> <span style="color:#a6e22e">protoc</span> <span style="color:#f92672">--</span><span style="color:#a6e22e">twirpql_out</span>=. <span style="color:#a6e22e">service</span>.<span style="color:#a6e22e">proto</span></code></pre></div>
+<p>Then, whenever you update <code>service.proto</code>, all you have to do is run <code>go generate</code> from the root directory.</p>
 
 </div>
 </div>

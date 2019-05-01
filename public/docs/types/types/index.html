@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Types - TWIRPQL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link rel="icon" href="/favicon.png">
+
+  
+  
+  <link rel="stylesheet" href="/css/style.min.bc568545ab6e059ea0773756ac462917af8724efd75961df2c5034d12b108a5a.css">
+  
+
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-home">
+      <a href="/">
+        <span>Home</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-docs">
+      <a href="/docs/">
+        <span>Docs</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img alt="Logo" src="/img/logo1.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img alt="Logo" src="/img/logo1.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    <li class="menu-item-home">
+      <a href="/">
+        <span>Home</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-docs">
+      <a href="/docs/">
+        <span>Docs</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+
+    
+    
+    
+    
+    
+    
+
+    
+    <div class="container pt-2 pt-md-6 pb-3 pb-md-6">
+      <div class="row">
+        <div class="col-12 col-md-3 mb-3">
+          <div class="sidebar">
+            
+<div class="docs-menu">
+  <h4>Docs</h4>
+  <ul>
+    
+    <li class="">
+      <a href="/docs/install/">Install TWIRPQL</a>
+    </li>
+    
+    <li class="">
+      <a href="/docs/quick-start/">Quick Start</a>
+    </li>
+    
+    <li class="active ">
+      <a href="/docs/types/types/">Types</a>
+    </li>
+    
+  </ul>
+</div>
+
+          </div>
+        </div>
+        <div class="col-12 col-md-9">
+          
+<h1 class="title">Types</h1>
+<div class="content">
+  
+
+<p>Protocol Buffer types are not exactly mapped to GraphQL types. Therefore, TwirpQL does a number of heavy lifting when certain types are not consistent.</p>
+
+<h3 id="enums">Enums</h3>
+
+<p>Protobuf enums are represented as <code>int32</code> types while GraphQL enums are a <code>String</code> type. Therefore, TwirpQL patches a converter between the two types so that dealing with enums feels natural. The <code>String</code> representation will be exactly how the enum was defined in the <code>service.proto</code> file. For example, if you have the following enum in <code>service.proto</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-proto" data-lang="proto"><span style="color:#66d9ef">enum</span> Traffic {<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    RED <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    YELLOW <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    GREEN <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>}</code></pre></div>
+<p>Then TwirpQL will create the following schema:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-graphql" data-lang="graphql"><span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">Traffic</span> {
+    RED
+    YELLOW
+    GREEN
+}</code></pre></div>
+<p>And therefore, the values of this GraphQL type will be one of <code>&quot;RED&quot;, &quot;YELLOW&quot;, or &quot;GREEN&quot;</code>.</p>
+
+<h3 id="maps">Maps</h3>
+
+<p>GraphQL does not yet have support for arbitrary key-value maps. See <a href="https://github.com/graphql/graphql-spec/issues/101">https://github.com/graphql/graphql-spec/issues/101</a> for more context.</p>
+
+<p>However, Protocol Buffer supports arbitrary maps inside messages such as</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-proto" data-lang="proto"><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">MyMessage</span> {<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    map&lt;<span style="color:#66d9ef">int64</span>, <span style="color:#66d9ef">string</span>&gt; myMap <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>}</code></pre></div>
+<p>In the example above, TwirpQL will create a custom <code>Scalar</code> type for GraphQL to interpret as a string for input queries, and an untyped JSON Object in the response data.</p>
+
+<p>Under the hood, TwirpQL will take care of converting strings into the Go maps.</p>
+
+<p>Therefore, your query input can be:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;req&#34;</span>: {
+        <span style="color:#f92672">&#34;myMap&#34;</span>: <span style="color:#e6db74">&#34;{\&#34;33\&#34;: \&#34;thirty three\&#34;}&#34;</span>
+    }
+}</code></pre></div>
+<p>And the query response will look something like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;data&#34;</span>: {
+        <span style="color:#f92672">&#34;myQuery&#34;</span>: {
+            <span style="color:#f92672">&#34;myMap&#34;</span>: {
+                <span style="color:#f92672">&#34;33&#34;</span>: <span style="color:#e6db74">&#34;thirty three&#34;</span>
+            }
+        }
+    }
+}</code></pre></div>
+<h3 id="messages-inputs-and-types">Messages, Inputs, and Types</h3>
+
+<p>Defining an object in Protocol Buffers are done through the <code>message</code> type declaration.
+Therefore, both a request&rsquo;s input and output can refer to the same <code>message</code>. For example:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-proto" data-lang="proto"><span style="color:#66d9ef">service</span> Service {<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#66d9ef">rpc</span> Hello(MyMessage) <span style="color:#66d9ef">returns</span> (MyMessage);<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">message</span> <span style="color:#a6e22e">MyMessage</span> {<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#66d9ef">string</span> text <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>}</code></pre></div>
+<p>Notice, that the same &ldquo;message declaration&rdquo; is <em>both</em> the input and the output of the Hello RPC.</p>
+
+<p>However, GraphQL makes a clear distinction between an RPC&rsquo;s input, and output. For example, take the following GraphQL Schema File:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-graphql" data-lang="graphql"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Query</span> {
+    Hello(req: <span style="color:#a6e22e">HelloReq</span>!): <span style="color:#a6e22e">HelloResp</span>!
+}
+
+<span style="color:#66d9ef">input</span> <span style="color:#a6e22e">HelloReq</span> {
+    text: <span style="color:#a6e22e">String</span>!
+}
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">HelloResp</span> {
+    text: <span style="color:#a6e22e">String</span>!
+}</code></pre></div>
+<p>Notice that the <code>HelloReq</code> object was declared with the <code>input</code> keyword while the <code>HelloResp</code> object was declared with the <code>type</code> keyword.</p>
+
+<p>Furthermore, GraphQL does not allow an <code>input</code> and a <code>type</code> to have the same name. And so converting the above Protobuf file to the following will <strong>not</strong> work:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-graphql" data-lang="graphql"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Query</span> {
+    Hello(req: <span style="color:#a6e22e">MyMessage</span>!): <span style="color:#a6e22e">MyMessage</span>!
+}
+
+<span style="color:#66d9ef">input</span> <span style="color:#a6e22e">MyMessage</span> {
+    text: <span style="color:#a6e22e">String</span>!
+}
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">MyMessage</span> {
+    text: <span style="color:#a6e22e">String</span>!
+}</code></pre></div>
+<p>Therefore, TwirpQL will need to adjust the name of either type declarations so that we can avoid name clashes. TwirpQL in this case chooses to append the word <code>Input</code> at the end of <code>MyMessage</code> as such:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-graphql" data-lang="graphql"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Query</span> {
+    Hello(req: <span style="color:#a6e22e">MyMessage</span>!): <span style="color:#a6e22e">MyMessage</span>!
+}
+
+<span style="color:#66d9ef">input</span> <span style="color:#a6e22e">MyMessageInput</span> {
+    text: <span style="color:#a6e22e">String</span>!
+}
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">MyMessage</span> {
+    text: <span style="color:#a6e22e">String</span>!
+}</code></pre></div>
+<h3 id="empty-messages">Empty Messages</h3>
+
+<p>In Protocol Buffers, a <code>message</code> declaration can be empty. However, GraphQL does not allow empty <code>input</code>/<code>type</code> declarations.</p>
+
+<p>TwirpQL does two things:</p>
+
+<ol>
+<li>If the <code>input</code> declaration is empty, then the input is removed. This is so that querying things is simpler.</li>
+<li>If the <code>type</code> declaration is empty, then TwirpQL makes up a fake field to make GraphQL happy.</li>
+</ol>
+
+<p>Please note that this behavior may change based on what makes the most sense in terms of maintainability. The obvious downside of this is that when you introduce a new field to the empty <code>message</code>, then the GraphQL contract has a breaking change.</p>
+
+</div>
+</div>
+
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          <ul>
+            <li class="zerostatic"><a href="https://marwan.io">marwan.io</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.bf1e1f7ae8e03db5f012356e825843facdff51c0a559cb0d27fe2bbe1db405c2.js"></script>
+  
+
+  
+  
+  
+    
+  
+
+
+</body>
+
+</html>

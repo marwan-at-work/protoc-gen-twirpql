@@ -1,6 +1,5 @@
 ---
-title: 'Quick Start'
-date: 2019-02-11T19:27:37+10:00
+title: 'Types'
 weight: 3
 ---
 
@@ -9,7 +8,7 @@ Protocol Buffer types are not exactly mapped to GraphQL types. Therefore, TwirpQ
 
 ### Enums
 
-Protobuf enums are represented as `int32` types while GraphQL enums are a `String` type. Therefore, TwirpQL patches a converter between the two types so that dealing with enums feel natural. The `String` representation will be exactly how the enum was defined in the `service.proto` file. For example, if you have the following enum in `service.proto`
+Protobuf enums are represented as `int32` types while GraphQL enums are a `String` type. Therefore, TwirpQL patches a converter between the two types so that dealing with enums feels natural. The `String` representation will be exactly how the enum was defined in the `service.proto` file. For example, if you have the following enum in `service.proto`
 
 ```proto
 enum Traffic {
@@ -29,11 +28,11 @@ enum Traffic {
 }
 ```
 
-And therefore, your GraphQL queries will be `"RED", "YELLOW", and "GREEN"`.
+And therefore, the values of this GraphQL type will be one of `"RED", "YELLOW", or "GREEN"`.
 
 ### Maps
 
-GraphQL does not yet have support for arbitrary key-value maps. See https://github.com/graphql/graphql-spec/issues/101
+GraphQL does not yet have support for arbitrary key-value maps. See https://github.com/graphql/graphql-spec/issues/101 for more context.
 
 However, Protocol Buffer supports arbitrary maps inside messages such as 
 

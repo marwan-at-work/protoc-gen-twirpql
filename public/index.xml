@@ -6,7 +6,6 @@
     <description>Recent content in   on TWIRPQL</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 01 May 2019 15:14:39 +1000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,25 +13,35 @@
     <item>
       <title>Install TWIRPQL</title>
       <link>/docs/install/</link>
-      <pubDate>Mon, 11 Feb 2019 19:27:37 +1000</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/docs/install/</guid>
       <description>In order to use TWIRPQL you need to:  Install the Go toolchain (1.12+). Install the latest version of the Protobuf Compiler (v3.8+) Install the Twirp plugin:
 GO111MODULE=on go install github.com/twitchtv/twirp/protoc-gen-twirp@v5.7.0
  Install the TWIRPQL plugin:
-GO111MODULE=on go install marwna.io/twirpql
+GO111MODULE=on go install marwan.io/protoc-gen-twirpql
   Next: Quick Start</description>
     </item>
     
     <item>
       <title>Quick Start</title>
       <link>/docs/quick-start/</link>
-      <pubDate>Mon, 11 Feb 2019 19:27:37 +1000</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/docs/quick-start/</guid>
       <description>Once you installed all the required depepndencies, this page will guide you through an end-to-end example.
 Create a new project ~ export GO111MODULE=on # no need to do this if you ar eoutside of GOPATH ~ mkdir hello &amp;amp;&amp;amp; cd hello &amp;amp;&amp;amp; go mod init hello Define your Twirp Service Create a file named service.proto and populate it with the following:
 syntax = &amp;quot;proto3&amp;quot;; package hello; option go_package = &amp;quot;hello&amp;quot;; service Service { rpc Hello(HelloReq) returns (HelloResp); } message HelloReq { string name = 1; } message HelloResp { string text = 1; }  Generate Go/Twirp Files Before you can generate a TWIRPQL layer, you need to generate the .</description>
+    </item>
+    
+    <item>
+      <title>Types</title>
+      <link>/docs/types/types/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/docs/types/types/</guid>
+      <description>Protocol Buffer types are not exactly mapped to GraphQL types. Therefore, TwirpQL does a number of heavy lifting when certain types are not consistent.
+Enums Protobuf enums are represented as int32 types while GraphQL enums are a String type. Therefore, TwirpQL patches a converter between the two types so that dealing with enums feels natural. The String representation will be exactly how the enum was defined in the service.proto file.</description>
     </item>
     
   </channel>
