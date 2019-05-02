@@ -36,7 +36,7 @@
     </li>
     
     <li class="menu-item-github">
-      <a href="https://github.com/marwan-at-work/twirpql">
+      <a href="https://github.com/marwan-at-work/protoc-gen-twirpql">
         <span>GitHub</span>
       </a>
     </li>
@@ -69,7 +69,7 @@
     </li>
     
     <li class="menu-item-github">
-      <a href="https://github.com/marwan-at-work/twirpql">
+      <a href="https://github.com/marwan-at-work/protoc-gen-twirpql">
         <span>GitHub</span>
       </a>
     </li>
@@ -103,7 +103,7 @@
   <ul>
     
     <li class="">
-      <a href="/docs/install/">Install TWIRPQL</a>
+      <a href="/docs/install/">Install TwirpQL</a>
     </li>
     
     <li class="active ">
@@ -111,11 +111,15 @@
     </li>
     
     <li class="">
-      <a href="/docs/types/types/">Types</a>
+      <a href="/docs/types/">Types</a>
     </li>
     
     <li class="">
-      <a href="/docs/multiple-services/multiple-services/">Multiple Services</a>
+      <a href="/docs/multiple-services/">Multiple Services</a>
+    </li>
+    
+    <li class="">
+      <a href="/docs/credit/">Credit</a>
     </li>
     
   </ul>
@@ -132,7 +136,7 @@
 <p>Once you installed all the required depepndencies, this page will guide you through an end-to-end example.</p>
 
 <h3 id="create-a-new-project">Create a new project</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ export GO111MODULE<span style="color:#f92672">=</span>on <span style="color:#75715e"># no need to do this if you ar eoutside of GOPATH</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ export GO111MODULE<span style="color:#f92672">=</span>on <span style="color:#75715e"># no need to do this if you are outside of GOPATH</span>
 ~ mkdir hello <span style="color:#f92672">&amp;&amp;</span> cd hello <span style="color:#f92672">&amp;&amp;</span> go mod init hello</code></pre></div>
 <h3 id="define-your-twirp-service">Define your Twirp Service</h3>
 
@@ -157,7 +161,7 @@ message HelloResp {
 
 <h3 id="generate-go-twirp-files">Generate Go/Twirp Files</h3>
 
-<p>Before you can generate a TWIRPQL layer, you need to generate the <code>.pb.go</code> and <code>.twirp.go</code> files so that we have the contract defined:</p>
+<p>Before you can generate a TwirpQL layer, you need to generate the <code>.pb.go</code> and <code>.twirp.go</code> files so that we have the contract defined:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ protoc --go_out<span style="color:#f92672">=</span>. --twirp_out<span style="color:#f92672">=</span>. service.proto</code></pre></div>
 <h3 id="implement-the-twirp-server">Implement the Twirp server</h3>
 
@@ -191,9 +195,9 @@ message HelloResp {
 <li>From another terminal run: <code>~ curl -X POST -d '{&quot;name&quot;: &quot;twirpql&quot;}' -H 'Content-Type: application/json' localhost:9090/twirp/hello.Service/Hello</code></li>
 </ol>
 
-<h3 id="create-the-twirpql-layer">Create the TWIRPQL layer</h3>
+<h3 id="create-the-twirpql-layer">Create the TwirpQL layer</h3>
 
-<p>Now that we verified we have a Twirp server working, let&rsquo;s create the TWIRPQL layer on top of it:</p>
+<p>Now that we verified we have a Twirp server working, let&rsquo;s create the TwirpQL layer on top of it:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># ctrl+c to stop the server, then:</span>
 ~ protoc --twirpql_out<span style="color:#f92672">=</span>. service.proto</code></pre></div>
 <p>This will create a new subdirectory called <code>twirpql</code> with all the necessary files to import a GraphQL layer on top of our Hello service.</p>

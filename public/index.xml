@@ -11,14 +11,14 @@
     
     
     <item>
-      <title>Install TWIRPQL</title>
+      <title>Install TwirpQL</title>
       <link>/docs/install/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/docs/install/</guid>
-      <description>In order to use TWIRPQL you need to:  Install the Go toolchain (1.12+). Install the latest version of the Protobuf Compiler (v3.8+) Install the Twirp plugin:
+      <description>In order to use TwirpQL you need to:  Install the Go toolchain (1.12+). Install the latest version of the Protobuf Compiler (v3.8+) Install the Twirp plugin:
 GO111MODULE=on go install github.com/twitchtv/twirp/protoc-gen-twirp@v5.7.0
- Install the TWIRPQL plugin:
+ Install the TwirpQL plugin:
 GO111MODULE=on go install marwan.io/protoc-gen-twirpql
   Next: Quick Start</description>
     </item>
@@ -30,29 +30,39 @@ GO111MODULE=on go install marwan.io/protoc-gen-twirpql
       
       <guid>/docs/quick-start/</guid>
       <description>Once you installed all the required depepndencies, this page will guide you through an end-to-end example.
-Create a new project ~ export GO111MODULE=on # no need to do this if you ar eoutside of GOPATH ~ mkdir hello &amp;amp;&amp;amp; cd hello &amp;amp;&amp;amp; go mod init hello Define your Twirp Service Create a file named service.proto and populate it with the following:
-syntax = &amp;quot;proto3&amp;quot;; package hello; option go_package = &amp;quot;hello&amp;quot;; service Service { rpc Hello(HelloReq) returns (HelloResp); } message HelloReq { string name = 1; } message HelloResp { string text = 1; }  Generate Go/Twirp Files Before you can generate a TWIRPQL layer, you need to generate the .</description>
+Create a new project ~ export GO111MODULE=on # no need to do this if you are outside of GOPATH ~ mkdir hello &amp;amp;&amp;amp; cd hello &amp;amp;&amp;amp; go mod init hello Define your Twirp Service Create a file named service.proto and populate it with the following:
+syntax = &amp;quot;proto3&amp;quot;; package hello; option go_package = &amp;quot;hello&amp;quot;; service Service { rpc Hello(HelloReq) returns (HelloResp); } message HelloReq { string name = 1; } message HelloResp { string text = 1; }  Generate Go/Twirp Files Before you can generate a TwirpQL layer, you need to generate the .</description>
     </item>
     
     <item>
       <title>Types</title>
-      <link>/docs/types/types/</link>
+      <link>/docs/types/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>/docs/types/types/</guid>
+      <guid>/docs/types/</guid>
       <description>Protocol Buffer types are not exactly mapped to GraphQL types. Therefore, TwirpQL does a number of heavy lifting when certain types are not consistent.
 Enums Protobuf enums are represented as int32 types while GraphQL enums are a String type. Therefore, TwirpQL patches a converter between the two types so that dealing with enums feels natural. The String representation will be exactly how the enum was defined in the service.proto file.</description>
     </item>
     
     <item>
       <title>Multiple Services</title>
-      <link>/docs/multiple-services/multiple-services/</link>
+      <link>/docs/multiple-services/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>/docs/multiple-services/multiple-services/</guid>
+      <guid>/docs/multiple-services/</guid>
       <description>TwirpQL&amp;rsquo;s architecture expects that for each service declaration in a Protobuf file, you get a full GraphQL layer under one sub-package.
 In other words, TwirpQL expects only one service for every code generation cycle. If your .proto file has only one service in it, then TwirpQL automatically chooses it for creating the GraphQL layer.
 However, if the .proto has multiple service declarations, then you must explicitly pick which service you want to generate a GraphQL layer for.</description>
+    </item>
+    
+    <item>
+      <title>Credit</title>
+      <link>/docs/credit/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/docs/credit/</guid>
+      <description>TwirpQL is built on top an incredible amount of work by others. To name a few:
+ Twirp for their well done and idiomatic framework: https://github.com/twitchtv/twirp Gqlgen for their highly configurable GraphQL Go implementation: https://gqlgen.com Lyft&amp;rsquo;s Star plugin for making Protoc plugins easy to create: https://github.com/lyft/protoc-gen-star Hugo for making this docs website: https://gohugo.io Netlify for hosting this website: https://netlify.com  </description>
     </item>
     
   </channel>
