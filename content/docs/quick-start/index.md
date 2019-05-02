@@ -9,7 +9,7 @@ Once you installed all the required depepndencies, this page will guide you thro
 ### Create a new project
 
 ```bash
-~ export GO111MODULE=on # no need to do this if you ar eoutside of GOPATH
+~ export GO111MODULE=on # no need to do this if you are outside of GOPATH
 ~ mkdir hello && cd hello && go mod init hello
 ```
 
