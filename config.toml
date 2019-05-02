@@ -35,16 +35,16 @@ pygmentsUseClasses = false
   google_analytics_id=""
   homepage_button_link = '/docs'
   homepage_button_text = 'Read The Docs'
-  homepage_intro = 'TWIRPQL puts a GraphQL layer on top of your Twirp servers'
+  homepage_intro = 'TwirpQL puts a GraphQL layer on top of your Twirp servers'
   # homepage_image = '/images/terminal.gif'
 
   [params.homepage_meta_tags]
-    meta_description = "TWIRPQL puts a GraphQL layer on top of your Twirp servers"
+    meta_description = "TwirpQL puts a GraphQL layer on top of your Twirp servers"
     meta_og_title = "TwirpQL"
     meta_og_type = "website"
     meta_og_url = "https://twirpql.dev"
     meta_og_image = "https://twirpql.dev/img/logo1.png"
-    meta_og_description = "TWIRPQL puts a GraphQL layer on top of your Twirp servers"
+    meta_og_description = "TwirpQL puts a GraphQL layer on top of your Twirp servers"
     meta_twitter_card = "summary"
     meta_twitter_site = "@MarwanSulaiman"
     meta_twitter_creator = "@MarwanSulaiman"
