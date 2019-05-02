@@ -159,12 +159,17 @@ func (tql *twirpql) setImportPath(serviceDir string) {
 	cmd.Stderr = &stderr
 	pkgpath, err := cmd.Output()
 	if err != nil {
-		panic("go list failed: stdout: " + string(pkgpath) + " - stderr: " + stderr.String())
+		msg := fmt.Sprintf("go list failed: %v - stdout: %v - stderr: %v", err, string(pkgpath), stderr.String())
+		if strings.Contains(stderr.String(), "cannot find module providing package") {
+			msg = "go list failed. Make sure you have .go files where your .proto file is." +
+				"Also make sure to run the --go_out=. --twirp_out=. plugins on a separate command before you run --twirpql_out"
+		}
+		panic(msg)
 	}
 	modname := strings.TrimSpace(string(pkgpath))
 	tql.modname = tql.Parameters().StrDefault("importpath", modname)
 	if tql.modname == "" {
-		panic("import path must be provided by go.mod in current directory or through modname parameters")
+		panic("import path must be provided by `go list` in the .proto directory or through the importpath plugin parameter")
 	}
 }
 
