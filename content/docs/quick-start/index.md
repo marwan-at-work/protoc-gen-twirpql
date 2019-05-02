@@ -37,7 +37,7 @@ message HelloResp {
 
 ### Generate Go/Twirp Files
 
-Before you can generate a TWIRPQL layer, you need to generate the `.pb.go` and `.twirp.go` files so that we have the contract defined: 
+Before you can generate a TwirpQL layer, you need to generate the `.pb.go` and `.twirp.go` files so that we have the contract defined: 
 
 ```bash
 ~ protoc --go_out=. --twirp_out=. service.proto
@@ -81,9 +81,9 @@ func main() {
 1. `go run server/main.go` 
 2. From another terminal run: `~ curl -X POST -d '{"name": "twirpql"}' -H 'Content-Type: application/json' localhost:9090/twirp/hello.Service/Hello`
 
-### Create the TWIRPQL layer
+### Create the TwirpQL layer
 
-Now that we verified we have a Twirp server working, let's create the TWIRPQL layer on top of it: 
+Now that we verified we have a Twirp server working, let's create the TwirpQL layer on top of it: 
 
 ```bash
 # ctrl+c to stop the server, then:
