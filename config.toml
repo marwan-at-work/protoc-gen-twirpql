@@ -28,7 +28,7 @@ pygmentsUseClasses = false
 
 [[menu.main]]
   name = "GitHub"
-  url = "https://github.com/marwan-at-work/twirpql"
+  url = "https://github.com/marwan-at-work/protoc-gen-twirpql"
   weight = 3
 
 [params]
