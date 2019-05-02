@@ -134,7 +134,7 @@ As you can see, we only had to add 3 lines of code:
 ~ go run server/main.go
 ```
 
-And navigate to the [localhost:9090/play](http://localhost:9090/play) on the browser: 
+And navigate to the <a target="_blank" href="http://localhost:9090/play">localhost:9090/play</a> on the browser: 
 
 <a href="/img/graphiql.png">
 ![Graphiql Image](/img/graphiql.png)
