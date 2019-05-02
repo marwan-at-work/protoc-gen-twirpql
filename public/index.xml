@@ -44,5 +44,16 @@ syntax = &amp;quot;proto3&amp;quot;; package hello; option go_package = &amp;quo
 Enums Protobuf enums are represented as int32 types while GraphQL enums are a String type. Therefore, TwirpQL patches a converter between the two types so that dealing with enums feels natural. The String representation will be exactly how the enum was defined in the service.proto file.</description>
     </item>
     
+    <item>
+      <title>Multiple Services</title>
+      <link>/docs/multiple-services/multiple-services/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/docs/multiple-services/multiple-services/</guid>
+      <description>TwirpQL&amp;rsquo;s architecture expects that for each service declaration in a Protobuf file, you get a full GraphQL layer under one sub-package.
+In other words, TwirpQL expects only one service for every code generation cycle. If your .proto file has only one service in it, then TwirpQL automatically chooses it for creating the GraphQL layer.
+However, if the .proto has multiple service declarations, then you must explicitly pick which service you want to generate a GraphQL layer for.</description>
+    </item>
+    
   </channel>
 </rss>

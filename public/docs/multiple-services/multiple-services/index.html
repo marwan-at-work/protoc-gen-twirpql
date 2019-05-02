@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Multiple Services - TWIRPQL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link rel="icon" href="/favicon.png">
+
+  
+  
+  <link rel="stylesheet" href="/css/style.min.bc568545ab6e059ea0773756ac462917af8724efd75961df2c5034d12b108a5a.css">
+  
+
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-home">
+      <a href="/">
+        <span>Home</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-docs">
+      <a href="/docs/">
+        <span>Docs</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img alt="Logo" src="/img/logo1.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img alt="Logo" src="/img/logo1.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    <li class="menu-item-home">
+      <a href="/">
+        <span>Home</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-docs">
+      <a href="/docs/">
+        <span>Docs</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+
+    
+    
+    
+    
+    
+    
+
+    
+    <div class="container pt-2 pt-md-6 pb-3 pb-md-6">
+      <div class="row">
+        <div class="col-12 col-md-3 mb-3">
+          <div class="sidebar">
+            
+<div class="docs-menu">
+  <h4>Docs</h4>
+  <ul>
+    
+    <li class="">
+      <a href="/docs/install/">Install TWIRPQL</a>
+    </li>
+    
+    <li class="">
+      <a href="/docs/quick-start/">Quick Start</a>
+    </li>
+    
+    <li class="">
+      <a href="/docs/types/types/">Types</a>
+    </li>
+    
+    <li class="active ">
+      <a href="/docs/multiple-services/multiple-services/">Multiple Services</a>
+    </li>
+    
+  </ul>
+</div>
+
+          </div>
+        </div>
+        <div class="col-12 col-md-9">
+          
+<h1 class="title">Multiple Services</h1>
+<div class="content">
+  
+
+<p>TwirpQL&rsquo;s architecture expects that for each <code>service</code> declaration in a Protobuf file, you get a full GraphQL layer under one sub-package.</p>
+
+<p>In other words, TwirpQL expects only one service for every code generation cycle. If your <code>.proto</code> file has only one service in it, then TwirpQL automatically chooses it for creating the GraphQL layer.</p>
+
+<p>However, if the <code>.proto</code> has multiple <code>service</code> declarations, then you must explicitly pick which service you want to generate a GraphQL layer for.</p>
+
+<p>For example, say you have the following <code>service.proto</code> file:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-proto" data-lang="proto">syntax <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;proto3&#34;</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#f92672">package</span> hello;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">option</span> go_package <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;hello&#34;</span>;<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">service</span> One {<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#f92672">...</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>}<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">service</span> Two {<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#f92672">...</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>}</code></pre></div>
+<p>Then you must specify which service you want to create a GraphQL for in the following way:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">protoc --twirpql_out<span style="color:#f92672">=</span>service<span style="color:#f92672">=</span>Two:. service.proto</code></pre></div>
+<h3 id="what-happens-if-i-want-a-graphql-layer-for-multiple-services">What happens if I want a GraphQL layer for multiple services?</h3>
+
+<p>It&rsquo;s quite common that one server = one service. However, it&rsquo;s not uncommon that one <em>server</em> has multiple <em>services</em>.</p>
+
+<p>Therefore, you can generate multiple GraphQL layers in the same project. Here&rsquo;s how:</p>
+
+<p>Say you have 3 <code>.proto</code> files, each with 1 service: <code>svc1.proto, svc2.proto, svc3.proto</code></p>
+
+<p>Then you can create the following command for each of them:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">protoc --twirpql_out<span style="color:#f92672">=</span>dest<span style="color:#f92672">=</span>svc1:. svc1.proto
+protoc --twirpql_out<span style="color:#f92672">=</span>dest<span style="color:#f92672">=</span>svc2:. svc2.proto
+protoc --twirpql_out<span style="color:#f92672">=</span>dest<span style="color:#f92672">=</span>svc3:. svc3.proto</code></pre></div>
+<p>This way, each generation cycle will create a <em>different</em> sub-package. By default, TwirpQL creates a sub-package called <code>twirpql</code> but in this case, we overrode this default and create different names for each sub-package.</p>
+
+<p>Once all sub-packages are created, then we can import them individually and place them under different URL paths:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+    <span style="color:#e6db74">&#34;net/http&#34;</span>
+
+    <span style="color:#a6e22e">svc1</span> <span style="color:#e6db74">&#34;./svc1&#34;</span>
+    <span style="color:#a6e22e">svc2</span> <span style="color:#e6db74">&#34;./svc2&#34;</span>
+    <span style="color:#a6e22e">svc3</span> <span style="color:#e6db74">&#34;./svc3&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+    <span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#e6db74">&#34;/svc1&#34;</span>, <span style="color:#a6e22e">svc1</span>.<span style="color:#a6e22e">Handler</span>(<span style="color:#f92672">...</span>))
+    <span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#e6db74">&#34;/svc2&#34;</span>, <span style="color:#a6e22e">svc2</span>.<span style="color:#a6e22e">Handler</span>(<span style="color:#f92672">...</span>))
+    <span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#e6db74">&#34;/svc3&#34;</span>, <span style="color:#a6e22e">svc3</span>.<span style="color:#a6e22e">Handler</span>(<span style="color:#f92672">...</span>))
+}</code></pre></div>
+</div>
+</div>
+
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          <ul>
+            <li class="zerostatic"><a href="https://marwan.io">marwan.io</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.bf1e1f7ae8e03db5f012356e825843facdff51c0a559cb0d27fe2bbe1db405c2.js"></script>
+  
+
+  
+  
+  
+    
+  
+
+
+</body>
+
+</html>
