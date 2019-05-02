@@ -154,7 +154,8 @@ func (tql *twirpql) pickServiceFromFile(svc string, f pgs.File) pgs.Service {
 
 func (tql *twirpql) setImportPath(serviceDir string) {
 	cmd := exec.Command("go", "list")
-	cmd.Dir = filepath.Dir(serviceDir)
+	cmd.Dir = serviceDir
+	cmd.Env = os.Environ()
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	pkgpath, err := cmd.Output()
