@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"marwan.io/protoc-gen-twirpql/e2e"
+	"marwan.io/protoc-gen-twirpql/e2e/painters"
 	"marwan.io/protoc-gen-twirpql/e2e/twirpql"
 )
 
@@ -57,12 +58,34 @@ func TestTrafficJam(t *testing.T) {
 	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
 }
 
+func TestPainters(t *testing.T) {
+	s := &service{paintersResp: &e2e.PaintersResp{
+		BestPainter: &painters.Painter{Name: "picasso"},
+		AllPainters: []string{"one", "two"},
+	}}
+	h := twirpql.Handler(s, nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/", strings.NewReader(`{
+		"operationName": "q",
+		"variables": {},
+		"query": "query q {\n  GetPainters {\n bestPainter {\n name }\n allPainters }\n}\n"
+	}`))
+	req.Header.Add("Content-Type", "application/json")
+	h.ServeHTTP(w, req)
+
+	expected := `{"data":{"GetPainters":{"bestPainter":{"name":"picasso"},"allPainters":["one","two"]}}}`
+
+	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
+}
+
 type service struct {
 	e2e.Service
 	helloReq       *e2e.HelloReq
 	helloResp      *e2e.HelloResp
 	trafficJamReq  *e2e.TrafficJamReq
 	trafficJamResp *e2e.TrafficJamResp
+	paintersReq    *e2e.PaintersReq
+	paintersResp   *e2e.PaintersResp
 	err            error
 }
 
@@ -73,5 +96,10 @@ func (s *service) Hello(ctx context.Context, req *e2e.HelloReq) (*e2e.HelloResp,
 
 func (s *service) TrafficJam(ctx context.Context, req *e2e.TrafficJamReq) (*e2e.TrafficJamResp, error) {
 	s.trafficJamReq = req
-	return s.trafficJamResp, nil
+	return s.trafficJamResp, s.err
+}
+
+func (s *service) GetPainters(ctx context.Context, req *e2e.PaintersReq) (*e2e.PaintersResp, error) {
+	s.paintersReq = req
+	return s.paintersResp, s.err
 }

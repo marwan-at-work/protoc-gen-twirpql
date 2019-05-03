@@ -14,6 +14,9 @@ models:
   HelloResp:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.HelloResp
+  PaintersResp:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.PaintersResp
   TrafficJamReq:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.TrafficJamReq
@@ -23,3 +26,6 @@ models:
   TrafficLight:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.TrafficLight
+  painters_Painter:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e/painters.Painter

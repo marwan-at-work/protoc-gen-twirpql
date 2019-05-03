@@ -25,3 +25,7 @@ func (r *queryResolver) Hello(ctx context.Context, req *e2e.HelloReq) (*e2e.Hell
 func (r *queryResolver) TrafficJam(ctx context.Context, req *e2e.TrafficJamReq) (*e2e.TrafficJamResp, error) {
 	return r.Service.TrafficJam(ctx, req)
 }
+
+func (r *queryResolver) GetPainters(ctx context.Context) (*e2e.PaintersResp, error) {
+	return r.Service.GetPainters(ctx, nil)
+}

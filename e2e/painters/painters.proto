@@ -1,0 +1,8 @@
+syntax = "proto3";
+package painters;
+option go_package = "marwan.io/protoc-gen-twirpql/e2e/painters";
+
+message Painter {
+    string name = 1;
+    // TODO: add painter's style as an enum
+}

@@ -27,6 +27,7 @@ import (
 // protoc run, writing the file into the /tmp directory.
 type twirpql struct {
 	*pgs.ModuleBase
+
 	// an input is a protobuf "message" that is
 	// found inside an RPC's Request so that GraphQL
 	// interprets it as an Input declaration.
@@ -36,36 +37,64 @@ type twirpql struct {
 	// because GraphQL does not allow types and
 	// inputs with matching names.
 	inputs map[string]*serviceType
+
 	// a "type" is a protobuf "message" that is
 	// found inside an RPC's Return so that GraphQL
 	// interprets it as a "Type" declaration.
 	types map[string]*serviceType
+
 	// an empty type keeps track of empty returns
 	// because GraphQL Types can't be empty
 	// and therefore we need to inject a dummy
 	// field.
 	emptys map[string]bool
+
 	// Enums are integers in protobuf but strings
 	// in GraphQL. Therefore, we need to keep track
 	// of declared enums in the proto file so that
 	// we create proper conversion for the GraphQL queries.
 	enums map[string][]string
-	maps  map[string]string
+
+	// maps are all map<type, type> declarations
+	// in a protobuf file. Those get turned into
+	// scalar values in GraphQL. The go type
+	// here is a map of the scalar name (the field name)
+	// to the full Go type representation.
+	// For example if we have a protobuf that looks like
+	// map<string, int64> myMap = 1;
+	// Then this map would look like {"MyMap": "map[string]int64"}
+	maps map[string]string
+
 	// gqlTypes are specific for the gqlgen config file
 	// so that we make all the input/output GraphQL
 	// types point to the generated .pb.go types.
-	gqlTypes  gqlconfig.TypeMap
-	tmpl      *template.Template
-	ctx       pgsgo.Context
-	modname   string
+	gqlTypes gqlconfig.TypeMap
+
+	// this is the graphql schema template
+	tmpl *template.Template
+
+	// this context holds Go related information about
+	// a protobuf file.
+	ctx pgsgo.Context
+
+	// modname is the import path that "go list"
+	// returns from inside the target .proto file
+	modname string
+
+	// gopkgname is the `option go_package` value
 	gopkgname string
-	svcname   string
+
+	// svcname is the name of the "service"
+	// declaration  in a protofile.
+	svcname string
+
 	// destpkgname is the directory path
 	// where the GraphQL generated code will
 	// live. It defaults to a "twirpql".
 	destpkgname string
-	svc         pgs.Service
-	protopkg    pgs.Package
+
+	svc      pgs.Service
+	protopkg pgs.Package
 }
 
 // New configures the module with an instance of ModuleBase
@@ -378,12 +407,18 @@ func (tql *twirpql) getFields(protoFields []pgs.Field, isType bool) []*serviceFi
 				tql.setMap(f.Name, pf)
 				tmp = strings.Title(f.Name)
 			} else {
-				if isType {
-					tmp = tql.getQualifiedName(pf.Type().Embed())
-					tql.setType(pf.Type().Embed())
+				var msg pgs.Message
+				if pf.Type().IsRepeated() {
+					msg = pf.Type().Element().Embed()
 				} else {
-					tmp = tql.getInputName(pf.Type().Embed())
-					tql.setInput(pf.Type().Embed())
+					msg = pf.Type().Embed()
+				}
+				if isType {
+					tmp = tql.getQualifiedName(msg)
+					tql.setType(msg)
+				} else {
+					tmp = tql.getInputName(msg)
+					tql.setInput(msg)
 				}
 			}
 		case 14:

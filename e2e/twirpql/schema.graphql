@@ -5,14 +5,24 @@ schema {
 type Query {
 	Hello(req: HelloReq): HelloResp!
 	TrafficJam(req: TrafficJamReq): TrafficJamResp!
+	GetPainters: PaintersResp!
 }
 
 type HelloResp {
 	text: String!
 }
 
+type PaintersResp {
+	bestPainter: painters_Painter!
+	allPainters: [String]!
+}
+
 type TrafficJamResp {
 	next: TrafficLight!
+}
+
+type painters_Painter {
+	name: String!
 }
 
 input HelloReq {

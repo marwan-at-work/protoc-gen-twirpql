@@ -10,16 +10,16 @@ type Query {
 type ByeResp {
 	one: Int!
 	two: Int!
-	three: Int!
-	four: Int!
+	three: [Int]!
+	four: [Int]!
 	traffic: Traffic!
 }
 
 type HelloResp {
 	one: String!
 	two: Boolean!
-	three: String!
-	four: Boolean!
+	three: [String]!
+	four: [Boolean]!
 }
 
 input ByeReq {

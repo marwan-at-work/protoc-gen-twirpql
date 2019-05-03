@@ -2,9 +2,12 @@ syntax = "proto3";
 package e2e;
 option go_package = "e2e";
 
+import "painters/painters.proto";
+
 service Service {
   rpc Hello(HelloReq) returns (HelloResp);
   rpc TrafficJam(TrafficJamReq) returns (TrafficJamResp);
+  rpc GetPainters(PaintersReq) returns (PaintersResp);
 }
 
 message HelloReq {
@@ -27,4 +30,13 @@ enum TrafficLight {
 
 message TrafficJamResp {
   TrafficLight next = 1;
+}
+
+message PaintersReq {
+
+}
+
+message PaintersResp {
+  painters.Painter bestPainter = 1;
+  repeated string allPainters = 2;
 }

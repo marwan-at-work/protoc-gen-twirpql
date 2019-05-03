@@ -103,7 +103,7 @@ func (f *formatter) printTypes() {
 		f.out.Write([]byte("type " + typeDecl.Name + " {\n"))
 		for _, field := range typeDecl.Fields {
 			f.out.Write([]byte{'\t'})
-			fmt.Fprintf(f.out, "%v: %v!\n", field.Name, field.Type.Name())
+			fmt.Fprintf(f.out, "%v: %v\n", field.Name, field.Type.String())
 		}
 		f.out.Write([]byte{'}', '\n'})
 	}
@@ -116,7 +116,7 @@ func (f *formatter) printInputs() {
 		f.out.Write([]byte("input " + typeDecl.Name + " {\n"))
 		for _, field := range typeDecl.Fields {
 			f.out.Write([]byte{'\t'})
-			fmt.Fprintf(f.out, "%v: %v!\n", field.Name, field.Type.Name())
+			fmt.Fprintf(f.out, "%v: %v\n", field.Name, field.Type.String())
 		}
 		f.out.Write([]byte{'}', '\n'})
 	}
