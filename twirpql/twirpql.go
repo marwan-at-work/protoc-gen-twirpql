@@ -140,27 +140,27 @@ func (tql *twirpql) Execute(targets map[string]pgs.File, pkgs map[string]pgs.Pac
 		tql.protopkg = targetFile.Package()
 		serviceDir := filepath.Dir(fileName)
 		tql.setImportPath(serviceDir)
-		f, err := os.Create(tql.schemaPath())
+		f, err := os.Create(tql.path("schema.graphql"))
 		must(err)
 		defer f.Close()
 		tql.generateSchema(targetFile, f)
 	}
 
 	if len(tql.maps) > 0 {
-		f, err := os.Create(filepath.Join(tql.destpkgname, "scalars.go"))
+		f, err := os.Create(tql.path("scalars.go"))
 		must(err)
 		genscalar.Render(tql.maps, f)
 		f.Close()
 	}
 
-	f, err := os.Create(filepath.Join(tql.destpkgname, "gqlgen.yml"))
+	f, err := os.Create(tql.path("gqlgen.yml"))
 	must(err)
 	defer f.Close()
-	cfg := tql.touchConfig(f)
+	tql.touchConfig(f)
 	if len(tql.enums) > 0 {
 		tql.bridgeEnums()
 	}
-	tql.initGql(cfg, tql.svcname)
+	tql.initGql(tql.svcname)
 
 	return tql.Artifacts()
 }
@@ -234,7 +234,7 @@ func (tql *twirpql) generateSchema(f pgs.File, out io.Writer) {
 // bridgeEnums creates a type conversion between
 // protobuf's enums (int32) and GraphQL's enums (string).
 func (tql *twirpql) bridgeEnums() {
-	f, err := os.Create(filepath.Join(tql.destpkgname, "enums.gen.go"))
+	f, err := os.Create(tql.path("enums.gen.go"))
 	must(err)
 	defer f.Close()
 	ed := &genenums.Data{
@@ -248,19 +248,18 @@ func (tql *twirpql) bridgeEnums() {
 	must(genenums.Render(ed, f))
 }
 
-func (tql *twirpql) touchConfig(out io.Writer) *gqlconfig.Config {
+func (tql *twirpql) touchConfig(out io.Writer) {
 	var cfg gqlconfig.Config
-	cfg.SchemaFilename = gqlconfig.StringList{tql.schemaPath()}
-	cfg.Exec = gqlconfig.PackageConfig{Filename: filepath.Join(tql.destpkgname, "generated.go")}
-	cfg.Resolver = gqlconfig.PackageConfig{Filename: filepath.Join(tql.destpkgname, "resolver.go"), Type: "Resolver"}
+	cfg.SchemaFilename = gqlconfig.StringList{tql.path("schema.graphql")}
+	cfg.Exec = gqlconfig.PackageConfig{Filename: tql.path("generated.go")}
+	cfg.Resolver = gqlconfig.PackageConfig{Filename: tql.path("resolver.go"), Type: "Resolver"}
 	cfg.Models = tql.gqlTypes
-	cfg.Model = gqlconfig.PackageConfig{Filename: filepath.Join(tql.destpkgname, "models_gen.go")}
+	cfg.Model = gqlconfig.PackageConfig{Filename: tql.path("models_gen.go")}
 	must(yaml.NewEncoder(out).Encode(&cfg))
-	return &cfg
 }
 
-func (tql *twirpql) initGql(cfg2 *gqlconfig.Config, svcName string) {
-	cfg, err := gqlconfig.LoadConfig(filepath.Join(tql.destpkgname, "gqlgen.yml"))
+func (tql *twirpql) initGql(svcName string) {
+	cfg, err := gqlconfig.LoadConfig(tql.path("gqlgen.yml"))
 	must(err)
 	emptys := []string{}
 	for k := range tql.emptys {
@@ -272,7 +271,7 @@ func (tql *twirpql) initGql(cfg2 *gqlconfig.Config, svcName string) {
 		api.NoPlugins(),
 		api.AddPlugin(modelgen.New()),
 		api.AddPlugin(genresolver.New(svcName, tql.gopkgname, emptys, tql.maps)),
-		api.AddPlugin(genserver.New(filepath.Join(tql.destpkgname, "server.go"), tql.modname, svcName)),
+		api.AddPlugin(genserver.New(tql.path("server.go"), tql.modname, svcName)),
 	)
 	must(err)
 }
@@ -449,8 +448,8 @@ func (tql *twirpql) formatQueryInput(msg pgs.Message) string {
 	return fmt.Sprintf("(req: %v)", tql.getInputName(msg))
 }
 
-func (tql *twirpql) schemaPath() string {
-	return filepath.Join(tql.destpkgname, "schema.graphql")
+func (tql *twirpql) path(s string) string {
+	return filepath.Join(tql.destpkgname, s)
 }
 
 var protoTypesToGqlTypes = map[string]string{
