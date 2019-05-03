@@ -25,15 +25,15 @@ type HelloResp {
 input ByeReq {
 	one: Int!
 	two: Int!
-	three: Int!
-	four: Int!
+	three: [Int]!
+	four: [Int]!
 }
 
 input HelloReq {
 	one: String!
 	two: Boolean!
-	three: String!
-	four: Boolean!
+	three: [String]!
+	four: [Boolean]!
 }
 
 enum Traffic {
