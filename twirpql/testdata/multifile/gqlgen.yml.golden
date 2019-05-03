@@ -11,9 +11,9 @@ models:
   HelloResp:
     model:
     - multifile.HelloResp
-  SecondReq:
+  second_SecondReq:
     model:
     - multifile.SecondReq
-  SecondResp:
+  second_SecondResp:
     model:
     - multifile.SecondResp

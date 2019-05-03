@@ -65,6 +65,7 @@ type twirpql struct {
 	// live. It defaults to a "twirpql".
 	destpkgname string
 	svc         pgs.Service
+	protopkg    pgs.Package
 }
 
 // New configures the module with an instance of ModuleBase
@@ -107,6 +108,7 @@ func (tql *twirpql) Execute(targets map[string]pgs.File, pkgs map[string]pgs.Pac
 
 	for fileName, targetFile := range targets {
 		tql.svc = tql.pickServiceFromFile(tql.Parameters().Str("service"), targetFile)
+		tql.protopkg = targetFile.Package()
 		serviceDir := filepath.Dir(fileName)
 		tql.setImportPath(serviceDir)
 		f, err := os.Create(tql.schemaPath())
@@ -269,21 +271,34 @@ func (tql *twirpql) getMethods(protoMethods []pgs.Method) []*method {
 			tql.setInput(pm.Input())
 			m.Request = tql.formatQueryInput(pm.Input())
 		}
-		m.Response = pm.Output().Name().String()
+		m.Response = tql.getQualifiedName(pm.Output())
 		methods = append(methods, &m)
 	}
 	return methods
 }
 
 func (tql *twirpql) setType(msg pgs.Message) {
-	if _, ok := tql.types[msg.Name().String()]; ok {
+	typeName := tql.getQualifiedName(msg)
+	if _, ok := tql.types[typeName]; ok {
 		return
 	}
 	var i serviceType
-	i.Name = msg.Name().String()
+	i.Name = typeName
 	tql.types[i.Name] = &i
 	tql.setGraphQLType(i.Name, msg)
-	i.Fields = tql.getFields(msg.Fields())
+	i.Fields = tql.getFields(msg.Fields(), true)
+}
+
+// getQualifiedName returns the name that will be defined inside the GraphQL Schema File.
+// For messgae declarations that are part of the target .proto file, they will stay the same
+// but if it's part of an import like "google.protobuf.Timestamp" then we combine the package name
+// with the Message namd to ensure we have no clashes so it becomes: "google_protobuf_Timestamp"
+func (tql *twirpql) getQualifiedName(msg pgs.Message) string {
+	if msg.Package() == tql.protopkg {
+		return msg.Name().String()
+	}
+	pkgName := strings.ReplaceAll(msg.Package().ProtoName().String(), ".", "_")
+	return pkgName + "_" + msg.Name().String()
 }
 
 func (tql *twirpql) setInput(msg pgs.Message) {
@@ -294,7 +309,7 @@ func (tql *twirpql) setInput(msg pgs.Message) {
 	i.Name = tql.getInputName(msg)
 	tql.inputs[i.Name] = &i
 	tql.setGraphQLType(i.Name, msg)
-	i.Fields = tql.getFields(msg.Fields())
+	i.Fields = tql.getFields(msg.Fields(), false)
 }
 
 // getInputName returns exactly the name of the message declaration:
@@ -306,10 +321,11 @@ func (tql *twirpql) setInput(msg pgs.Message) {
 // not allow an Input and a Type to be the same name, therefore
 // we will append an "Input" so that it becomes SomeMessageInput.
 func (tql *twirpql) getInputName(msg pgs.Message) string {
-	if _, ok := tql.types[msg.Name().String()]; ok {
-		return msg.Name().String() + "Input"
+	msgName := tql.getQualifiedName(msg)
+	if _, ok := tql.types[msgName]; ok {
+		return msgName + "Input"
 	}
-	return msg.Name().String()
+	return msgName
 }
 
 func (tql *twirpql) setGraphQLType(name string, msg pgs.Message) {
@@ -317,8 +333,12 @@ func (tql *twirpql) setGraphQLType(name string, msg pgs.Message) {
 		tql.emptys[name] = true
 		return
 	}
+	importpath := tql.ctx.ImportPath(msg.File()).String()
+	if importpath == "." {
+		importpath = tql.modname
+	}
 	tql.gqlTypes[name] = gqlconfig.TypeMapEntry{
-		Model: gqlconfig.StringList{tql.modname + "." + msg.Name().String()},
+		Model: gqlconfig.StringList{importpath + "." + msg.Name().String()},
 	}
 }
 
@@ -345,7 +365,7 @@ func (tql *twirpql) setMap(fieldName string, f pgs.Field) {
 	}
 }
 
-func (tql *twirpql) getFields(protoFields []pgs.Field) []*serviceField {
+func (tql *twirpql) getFields(protoFields []pgs.Field, isType bool) []*serviceField {
 	fields := []*serviceField{}
 	for _, pf := range protoFields {
 		var f serviceField
@@ -354,12 +374,17 @@ func (tql *twirpql) getFields(protoFields []pgs.Field) []*serviceField {
 		var tmp string
 		switch pt {
 		case 11:
-			tmp = tql.ctx.Type(pf).Value().String()
 			if pf.Type().IsMap() {
 				tql.setMap(f.Name, pf)
 				tmp = strings.Title(f.Name)
 			} else {
-				tql.setInput(pf.Type().Embed())
+				if isType {
+					tmp = tql.getQualifiedName(pf.Type().Embed())
+					tql.setType(pf.Type().Embed())
+				} else {
+					tmp = tql.getInputName(pf.Type().Embed())
+					tql.setInput(pf.Type().Embed())
+				}
 			}
 		case 14:
 			tql.setEnum(pf.Type().Enum())

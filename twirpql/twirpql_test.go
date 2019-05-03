@@ -61,6 +61,7 @@ func getModule(t *testing.T, dirName string) (*twirpql, pgs.File) {
 	m := New(dirName).(*twirpql)
 	m.ctx = ctx
 	m.svc = f.Services()[0]
+	m.protopkg = f.Package()
 	return m, f
 }
 

@@ -4,17 +4,17 @@ schema {
 
 type Query {
 	Hello: HelloResp!
-	Second(req: SecondReq): SecondResp!
+	Second(req: second_SecondReq): second_SecondResp!
 }
 
 type HelloResp {
 	text: String!
 }
 
-type SecondResp {
+type second_SecondResp {
 	second: String!
 }
 
-input SecondReq {
+input second_SecondReq {
 	second: String!
 }
