@@ -183,9 +183,9 @@ func (tql *twirpql) pickServiceFromFile(svc string, f pgs.File) pgs.Service {
 	panic("protofile does not have the given service: " + svc)
 }
 
-func (tql *twirpql) setImportPath(serviceDir string) {
+func (tql *twirpql) goList(dir string) string {
 	cmd := exec.Command("go", "list")
-	cmd.Dir = serviceDir
+	cmd.Dir = dir
 	cmd.Env = os.Environ()
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -198,7 +198,11 @@ func (tql *twirpql) setImportPath(serviceDir string) {
 		}
 		panic(msg)
 	}
-	modname := strings.TrimSpace(string(pkgpath))
+	return strings.TrimSpace(string(pkgpath))
+}
+
+func (tql *twirpql) setImportPath(serviceDir string) {
+	modname := tql.goList(serviceDir)
 	tql.modname = tql.Parameters().StrDefault("importpath", modname)
 	if tql.modname == "" {
 		panic("import path must be provided by `go list` in the .proto directory or through the importpath plugin parameter")
@@ -361,13 +365,35 @@ func (tql *twirpql) setGraphQLType(name string, msg pgs.Message) {
 		tql.emptys[name] = true
 		return
 	}
-	importpath := tql.ctx.ImportPath(msg.File()).String()
-	if importpath == "." {
-		importpath = tql.modname
-	}
+	importpath := tql.deduceImportPath(msg)
 	tql.gqlTypes[name] = gqlconfig.TypeMapEntry{
 		Model: gqlconfig.StringList{importpath + "." + msg.Name().String()},
 	}
+}
+
+// deduceImportPath takes a protobuf message and does its best
+// to tell you what the Go import path is for that message.
+// At first, it checks if the go_package option is the same
+// as the current working directory, if that's the case
+// we already called "go list" and we just return tql.modname.
+// Second, if the import path contains one or more "/" chars,
+// then we return exactly the go_package option because this
+// could mean the import path is somewhere outside of the .proto
+// file such as "google.protobuf.Timestamp" pointing to
+// "github.com/golang/protobuf/ptypes/timestamp".
+// Last, assume the location of the .proto file is in a
+// subdirectory from within the project, so we just call
+// "go list" from within that subdirectory.
+func (tql *twirpql) deduceImportPath(msg pgs.Entity) string {
+	gopkg := tql.ctx.ImportPath(msg.File()).String()
+	if gopkg == "." {
+		return tql.modname
+	}
+	if strings.Contains(gopkg, "/") {
+		return gopkg
+	}
+
+	return tql.goList(msg.File().InputPath().Dir().String())
 }
 
 func (tql *twirpql) setEnum(protoEnum pgs.Enum) {
