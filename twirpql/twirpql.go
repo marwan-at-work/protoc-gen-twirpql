@@ -93,6 +93,10 @@ type twirpql struct {
 	// live. It defaults to a "twirpql".
 	destpkgname string
 
+	// is the import path that will import
+	// the twirpql sub-package
+	destimportpath string
+
 	svc      pgs.Service
 	protopkg pgs.Package
 }
@@ -100,17 +104,18 @@ type twirpql struct {
 // New configures the module with an instance of ModuleBase
 func New(importPath string) pgs.Module {
 	return &twirpql{
-		ModuleBase:  &pgs.ModuleBase{},
-		inputs:      map[string]*serviceType{},
-		types:       map[string]*serviceType{},
-		emptys:      map[string]bool{},
-		enums:       map[string][]string{},
-		maps:        map[string]string{},
-		gqlTypes:    gqlconfig.TypeMap{},
-		tmpl:        template.Must(template.New("").Parse(schemaTemplate)),
-		modname:     importPath,
-		ctx:         pgsgo.InitContext(pgs.ParseParameters("")),
-		destpkgname: "./twirpql",
+		ModuleBase:     &pgs.ModuleBase{},
+		inputs:         map[string]*serviceType{},
+		types:          map[string]*serviceType{},
+		emptys:         map[string]bool{},
+		enums:          map[string][]string{},
+		maps:           map[string]string{},
+		gqlTypes:       gqlconfig.TypeMap{},
+		tmpl:           template.Must(template.New("").Parse(schemaTemplate)),
+		modname:        importPath,
+		ctx:            pgsgo.InitContext(pgs.ParseParameters("")),
+		destpkgname:    "./twirpql",
+		destimportpath: "",
 	}
 }
 
@@ -140,6 +145,11 @@ func (tql *twirpql) Execute(targets map[string]pgs.File, pkgs map[string]pgs.Pac
 		tql.protopkg = targetFile.Package()
 		serviceDir := filepath.Dir(fileName)
 		tql.setImportPath(serviceDir)
+		if serviceDir == "." {
+			tql.destimportpath = tql.modname
+		} else {
+			tql.destimportpath = tql.goList(".")
+		}
 		f, err := os.Create(tql.path("schema.graphql"))
 		must(err)
 		defer f.Close()
@@ -415,7 +425,7 @@ func (tql *twirpql) setMap(fieldName string, f pgs.Field) {
 	upField := strings.Title(fieldName)
 	tql.maps[upField] = tql.ctx.Type(f).Value().String()
 	tql.gqlTypes[upField] = gqlconfig.TypeMapEntry{
-		Model: gqlconfig.StringList{tql.modname + "/twirpql." + upField},
+		Model: gqlconfig.StringList{tql.destimportpath + "/twirpql." + upField},
 	}
 }
 
