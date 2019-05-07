@@ -8,6 +8,7 @@ service Service {
   rpc Hello(HelloReq) returns (HelloResp);
   rpc TrafficJam(TrafficJamReq) returns (TrafficJamResp);
   rpc GetPainters(PaintersReq) returns (PaintersResp);
+  rpc Translate(TranslateReq) returns (TranslateResp);
 }
 
 message HelloReq {
@@ -39,4 +40,17 @@ message PaintersReq {
 message PaintersResp {
   painters.Painter bestPainter = 1;
   repeated string allPainters = 2;
+}
+
+message TranslateResp {
+  map<string, Word> translations = 1; 
+}
+
+message Word {
+  string word = 1;
+  string language = 2;
+}
+
+message TranslateReq {
+  map<string, Word> words = 1; 
 }

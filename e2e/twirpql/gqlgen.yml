@@ -26,6 +26,18 @@ models:
   TrafficLight:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.TrafficLight
+  TranslateReq:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.TranslateReq
+  TranslateResp:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.TranslateResp
+  Translations:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e/twirpql.Translations
+  Words:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e/twirpql.Words
   painters_Painter:
     model:
     - marwan.io/protoc-gen-twirpql/e2e/painters.Painter

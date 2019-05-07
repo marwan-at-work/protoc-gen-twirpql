@@ -15,6 +15,9 @@ type Resolver struct {
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
+func (r *Resolver) TranslateResp() TranslateRespResolver {
+	return &translateRespResolver{r}
+}
 
 type queryResolver struct{ *Resolver }
 
@@ -28,4 +31,14 @@ func (r *queryResolver) TrafficJam(ctx context.Context, req *e2e.TrafficJamReq) 
 
 func (r *queryResolver) GetPainters(ctx context.Context) (*e2e.PaintersResp, error) {
 	return r.Service.GetPainters(ctx, nil)
+}
+
+func (r *queryResolver) Translate(ctx context.Context, req *e2e.TranslateReq) (*e2e.TranslateResp, error) {
+	return r.Service.Translate(ctx, req)
+}
+
+type translateRespResolver struct{ *Resolver }
+
+func (r *translateRespResolver) Translations(ctx context.Context, obj *e2e.TranslateResp) (Translations, error) {
+	return obj.GetTranslations(), nil
 }

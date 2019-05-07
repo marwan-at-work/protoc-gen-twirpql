@@ -78,6 +78,35 @@ func TestPainters(t *testing.T) {
 	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
 }
 
+func TestTranslate(t *testing.T) {
+	s := &service{translateResp: &e2e.TranslateResp{
+		Translations: map[string]*e2e.Word{
+			"english": &e2e.Word{
+				Word: "hello",
+			},
+		},
+	}}
+	h := twirpql.Handler(s, nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/", strings.NewReader(`{
+		"operationName": "q",
+		"variables": {
+			"req": {
+				"words": "{\"english\": {\"word\": \"hello\"}}"
+			}
+		},
+		"query": "query q($req: TranslateReq) {\n  Translate(req: $req) {\n translations }\n}\n"
+	}`))
+	req.Header.Add("Content-Type", "application/json")
+	h.ServeHTTP(w, req)
+
+	require.Equal(t, s.translateReq.GetWords(), map[string]*e2e.Word{"english": {Word: "hello"}})
+
+	expected := `{"data":{"Translate":{"translations":{"english":{"word":"hello"}}}}}`
+
+	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
+}
+
 type service struct {
 	e2e.Service
 	helloReq       *e2e.HelloReq
@@ -86,6 +115,8 @@ type service struct {
 	trafficJamResp *e2e.TrafficJamResp
 	paintersReq    *e2e.PaintersReq
 	paintersResp   *e2e.PaintersResp
+	translateReq   *e2e.TranslateReq
+	translateResp  *e2e.TranslateResp
 	err            error
 }
 
@@ -102,4 +133,9 @@ func (s *service) TrafficJam(ctx context.Context, req *e2e.TrafficJamReq) (*e2e.
 func (s *service) GetPainters(ctx context.Context, req *e2e.PaintersReq) (*e2e.PaintersResp, error) {
 	s.paintersReq = req
 	return s.paintersResp, s.err
+}
+
+func (s *service) Translate(ctx context.Context, req *e2e.TranslateReq) (*e2e.TranslateResp, error) {
+	s.translateReq = req
+	return s.translateResp, s.err
 }

@@ -6,6 +6,7 @@ type Query {
 	Hello(req: HelloReq): HelloResp!
 	TrafficJam(req: TrafficJamReq): TrafficJamResp!
 	GetPainters: PaintersResp!
+	Translate(req: TranslateReq): TranslateResp!
 }
 
 type HelloResp {
@@ -21,6 +22,10 @@ type TrafficJamResp {
 	next: TrafficLight!
 }
 
+type TranslateResp {
+	translations: Translations!
+}
+
 type painters_Painter {
 	name: String!
 }
@@ -33,8 +38,16 @@ input TrafficJamReq {
 	color: TrafficLight!
 }
 
+input TranslateReq {
+	words: Words!
+}
+
 enum TrafficLight {
 	RED
 	YELLOW
 	GREEN
 }
+
+scalar Translations
+
+scalar Words

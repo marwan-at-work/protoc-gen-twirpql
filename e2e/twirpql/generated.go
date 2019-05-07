@@ -36,6 +36,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Query() QueryResolver
+	TranslateResp() TranslateRespResolver
 }
 
 type DirectiveRoot struct {
@@ -55,10 +56,15 @@ type ComplexityRoot struct {
 		GetPainters func(childComplexity int) int
 		Hello       func(childComplexity int, req *e2e.HelloReq) int
 		TrafficJam  func(childComplexity int, req *e2e.TrafficJamReq) int
+		Translate   func(childComplexity int, req *e2e.TranslateReq) int
 	}
 
 	TrafficJamResp struct {
 		Next func(childComplexity int) int
+	}
+
+	TranslateResp struct {
+		Translations func(childComplexity int) int
 	}
 
 	PaintersPainter struct {
@@ -70,6 +76,10 @@ type QueryResolver interface {
 	Hello(ctx context.Context, req *e2e.HelloReq) (*e2e.HelloResp, error)
 	TrafficJam(ctx context.Context, req *e2e.TrafficJamReq) (*e2e.TrafficJamResp, error)
 	GetPainters(ctx context.Context) (*e2e.PaintersResp, error)
+	Translate(ctx context.Context, req *e2e.TranslateReq) (*e2e.TranslateResp, error)
+}
+type TranslateRespResolver interface {
+	Translations(ctx context.Context, obj *e2e.TranslateResp) (Translations, error)
 }
 
 type executableSchema struct {
@@ -139,12 +149,31 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.TrafficJam(childComplexity, args["req"].(*e2e.TrafficJamReq)), true
 
+	case "Query.Translate":
+		if e.complexity.Query.Translate == nil {
+			break
+		}
+
+		args, err := ec.field_Query_Translate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Translate(childComplexity, args["req"].(*e2e.TranslateReq)), true
+
 	case "TrafficJamResp.Next":
 		if e.complexity.TrafficJamResp.Next == nil {
 			break
 		}
 
 		return e.complexity.TrafficJamResp.Next(childComplexity), true
+
+	case "TranslateResp.Translations":
+		if e.complexity.TranslateResp.Translations == nil {
+			break
+		}
+
+		return e.complexity.TranslateResp.Translations(childComplexity), true
 
 	case "painters_Painter.Name":
 		if e.complexity.PaintersPainter.Name == nil {
@@ -225,6 +254,7 @@ type Query {
 	Hello(req: HelloReq): HelloResp!
 	TrafficJam(req: TrafficJamReq): TrafficJamResp!
 	GetPainters: PaintersResp!
+	Translate(req: TranslateReq): TranslateResp!
 }
 
 type HelloResp {
@@ -240,6 +270,10 @@ type TrafficJamResp {
 	next: TrafficLight!
 }
 
+type TranslateResp {
+	translations: Translations!
+}
+
 type painters_Painter {
 	name: String!
 }
@@ -252,11 +286,19 @@ input TrafficJamReq {
 	color: TrafficLight!
 }
 
+input TranslateReq {
+	words: Words!
+}
+
 enum TrafficLight {
 	RED
 	YELLOW
 	GREEN
 }
+
+scalar Translations
+
+scalar Words
 `},
 )
 
@@ -284,6 +326,20 @@ func (ec *executionContext) field_Query_TrafficJam_args(ctx context.Context, raw
 	var arg0 *e2e.TrafficJamReq
 	if tmp, ok := rawArgs["req"]; ok {
 		arg0, err = ec.unmarshalOTrafficJamReq2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficJamReq(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["req"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_Translate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *e2e.TranslateReq
+	if tmp, ok := rawArgs["req"]; ok {
+		arg0, err = ec.unmarshalOTranslateReq2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateReq(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -514,6 +570,40 @@ func (ec *executionContext) _Query_GetPainters(ctx context.Context, field graphq
 	return ec.marshalNPaintersResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐPaintersResp(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_Translate(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_Translate_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Translate(rctx, args["req"].(*e2e.TranslateReq))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*e2e.TranslateResp)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNTranslateResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateResp(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
@@ -594,6 +684,33 @@ func (ec *executionContext) _TrafficJamResp_next(ctx context.Context, field grap
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNTrafficLight2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficLight(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TranslateResp_translations(ctx context.Context, field graphql.CollectedField, obj *e2e.TranslateResp) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "TranslateResp",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TranslateResp().Translations(rctx, obj)
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(Translations)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNTranslations2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐTranslations(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) graphql.Marshaler {
@@ -1490,6 +1607,24 @@ func (ec *executionContext) unmarshalInputTrafficJamReq(ctx context.Context, v i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTranslateReq(ctx context.Context, v interface{}) (e2e.TranslateReq, error) {
+	var it e2e.TranslateReq
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "words":
+			var err error
+			it.Words, err = ec.unmarshalNWords2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐWords(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -1614,6 +1749,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "Translate":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_Translate(ctx, field)
+				if res == graphql.Null {
+					invalid = true
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -1645,6 +1794,42 @@ func (ec *executionContext) _TrafficJamResp(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+var translateRespImplementors = []string{"TranslateResp"}
+
+func (ec *executionContext) _TranslateResp(ctx context.Context, sel ast.SelectionSet, obj *e2e.TranslateResp) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, translateRespImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	invalid := false
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TranslateResp")
+		case "translations":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TranslateResp_translations(ctx, field, obj)
+				if res == graphql.Null {
+					invalid = true
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2023,6 +2208,38 @@ func (ec *executionContext) marshalNTrafficLight2marwanᚗioᚋprotocᚑgenᚑtw
 	return ec._TrafficLight(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNTranslateResp2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateResp(ctx context.Context, sel ast.SelectionSet, v e2e.TranslateResp) graphql.Marshaler {
+	return ec._TranslateResp(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTranslateResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateResp(ctx context.Context, sel ast.SelectionSet, v *e2e.TranslateResp) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._TranslateResp(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTranslations2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐTranslations(ctx context.Context, v interface{}) (Translations, error) {
+	var res Translations
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNTranslations2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐTranslations(ctx context.Context, sel ast.SelectionSet, v Translations) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNWords2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐWords(ctx context.Context, v interface{}) (Words, error) {
+	var res Words
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNWords2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐWords(ctx context.Context, sel ast.SelectionSet, v Words) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
 	return ec.___Directive(ctx, sel, &v)
 }
@@ -2318,6 +2535,18 @@ func (ec *executionContext) unmarshalOTrafficJamReq2ᚖmarwanᚗioᚋprotocᚑge
 		return nil, nil
 	}
 	res, err := ec.unmarshalOTrafficJamReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficJamReq(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) unmarshalOTranslateReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateReq(ctx context.Context, v interface{}) (e2e.TranslateReq, error) {
+	return ec.unmarshalInputTranslateReq(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOTranslateReq2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateReq(ctx context.Context, v interface{}) (*e2e.TranslateReq, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOTranslateReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateReq(ctx, v)
 	return &res, err
 }
 
