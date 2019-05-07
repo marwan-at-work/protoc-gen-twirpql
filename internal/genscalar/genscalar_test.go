@@ -18,7 +18,7 @@ func TestGenScalar(t *testing.T) {
 	}
 
 	var b bytes.Buffer
-	err := Render(d, &b)
+	err := Render(d, nil, &b)
 	require.NoError(t, err)
 
 	if *update {

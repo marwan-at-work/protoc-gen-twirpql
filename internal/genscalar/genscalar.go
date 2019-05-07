@@ -9,11 +9,20 @@ import (
 
 var tmpl = template.Must(template.New("").Parse(templateText))
 
+type data struct {
+	Imports []string
+	Types   map[string]string
+}
+
 // Render renders a scalar
 // implementation.
-func Render(mp map[string]string, out io.Writer) error {
+func Render(mp map[string]string, imports map[string]struct{}, out io.Writer) error {
+	d := &data{Types: mp}
+	for i := range imports {
+		d.Imports = append(d.Imports, i)
+	}
 	var b bytes.Buffer
-	err := tmpl.Execute(&b, mp)
+	err := tmpl.Execute(&b, d)
 	if err != nil {
 		return err
 	}
@@ -30,9 +39,12 @@ const templateText = `package twirpql
 import (
 	"encoding/json"
 	"io"
+	{{ range .Imports }}
+	"{{ . }}"
+	{{ end }}
 )
 
-{{range $key, $val := .}}
+{{range $key, $val := .Types}}
 type {{$key}} {{$val}}
 
 func (scalar *{{$key}}) UnmarshalGQL(v interface{}) error {

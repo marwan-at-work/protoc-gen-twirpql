@@ -65,6 +65,12 @@ type twirpql struct {
 	// Then this map would look like {"MyMap": "map[string]int64"}
 	maps map[string]string
 
+	// mapImports correspond to any import paths
+	// the above maps field requires, such as
+	// when the map ends up being something
+	// like map[string]*ptypes.Timestamp
+	mapImports map[string]struct{}
+
 	// gqlTypes are specific for the gqlgen config file
 	// so that we make all the input/output GraphQL
 	// types point to the generated .pb.go types.
@@ -110,6 +116,7 @@ func New(importPath string) pgs.Module {
 		emptys:         map[string]bool{},
 		enums:          map[string][]string{},
 		maps:           map[string]string{},
+		mapImports:     map[string]struct{}{},
 		gqlTypes:       gqlconfig.TypeMap{},
 		tmpl:           template.Must(template.New("").Parse(schemaTemplate)),
 		modname:        importPath,
@@ -159,8 +166,8 @@ func (tql *twirpql) Execute(targets map[string]pgs.File, pkgs map[string]pgs.Pac
 	if len(tql.maps) > 0 {
 		f, err := os.Create(tql.path("scalars.go"))
 		must(err)
-		genscalar.Render(tql.maps, f)
-		f.Close()
+		defer f.Close()
+		must(genscalar.Render(tql.maps, tql.mapImports, f))
 	}
 
 	f, err := os.Create(tql.path("gqlgen.yml"))
@@ -423,7 +430,22 @@ func (tql *twirpql) setGraphQLEnum(name string) {
 
 func (tql *twirpql) setMap(fieldName string, f pgs.Field) {
 	upField := strings.Title(fieldName)
-	tql.maps[upField] = tql.ctx.Type(f).Value().String()
+	switch f.Type().Element().ProtoType().Proto() {
+	case 11:
+		mapValue := f.Type().Element().Embed()
+		tql.mapImports[tql.deduceImportPath(mapValue)] = struct{}{}
+		goTypeDeclaration := strings.ReplaceAll(
+			tql.ctx.Type(f).Value().String(),
+			mapValue.Name().String(),
+			tql.ctx.PackageName(mapValue).String()+"."+
+				mapValue.Name().String(),
+		)
+		tql.maps[upField] = goTypeDeclaration
+	case 14:
+		panic("maps to enum values are not yet supported")
+	default:
+		tql.maps[upField] = tql.ctx.Type(f).Value().String()
+	}
 	tql.gqlTypes[upField] = gqlconfig.TypeMapEntry{
 		Model: gqlconfig.StringList{tql.destimportpath + "/twirpql." + upField},
 	}
