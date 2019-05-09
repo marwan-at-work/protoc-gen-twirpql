@@ -52,6 +52,10 @@ type ComplexityRoot struct {
 		BestPainter func(childComplexity int) int
 	}
 
+	PaintersPainter struct {
+		Name func(childComplexity int) int
+	}
+
 	Query struct {
 		GetPainters func(childComplexity int) int
 		Hello       func(childComplexity int, req *e2e.HelloReq) int
@@ -65,10 +69,6 @@ type ComplexityRoot struct {
 
 	TranslateResp struct {
 		Translations func(childComplexity int) int
-	}
-
-	PaintersPainter struct {
-		Name func(childComplexity int) int
 	}
 }
 
@@ -117,6 +117,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PaintersResp.BestPainter(childComplexity), true
+
+	case "Painters_Painter.Name":
+		if e.complexity.PaintersPainter.Name == nil {
+			break
+		}
+
+		return e.complexity.PaintersPainter.Name(childComplexity), true
 
 	case "Query.GetPainters":
 		if e.complexity.Query.GetPainters == nil {
@@ -174,13 +181,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.TranslateResp.Translations(childComplexity), true
-
-	case "painters_Painter.Name":
-		if e.complexity.PaintersPainter.Name == nil {
-			break
-		}
-
-		return e.complexity.PaintersPainter.Name(childComplexity), true
 
 	}
 	return 0, false
@@ -262,8 +262,12 @@ type HelloResp {
 }
 
 type PaintersResp {
-	bestPainter: painters_Painter!
+	bestPainter: Painters_Painter!
 	allPainters: [String]!
+}
+
+type Painters_Painter {
+	name: String!
 }
 
 type TrafficJamResp {
@@ -272,10 +276,6 @@ type TrafficJamResp {
 
 type TranslateResp {
 	translations: Translations!
-}
-
-type painters_Painter {
-	name: String!
 }
 
 input HelloReq {
@@ -445,7 +445,7 @@ func (ec *executionContext) _PaintersResp_bestPainter(ctx context.Context, field
 	res := resTmp.(*painters.Painter)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNpainters_Painter2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋpaintersᚐPainter(ctx, field.Selections, res)
+	return ec.marshalNPainters_Painter2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋpaintersᚐPainter(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PaintersResp_allPainters(ctx context.Context, field graphql.CollectedField, obj *e2e.PaintersResp) graphql.Marshaler {
@@ -473,6 +473,33 @@ func (ec *executionContext) _PaintersResp_allPainters(ctx context.Context, field
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNString2ᚕstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Painters_Painter_name(ctx context.Context, field graphql.CollectedField, obj *painters.Painter) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Painters_Painter",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_Hello(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
@@ -1540,33 +1567,6 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 	return ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _painters_Painter_name(ctx context.Context, field graphql.CollectedField, obj *painters.Painter) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "painters_Painter",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
 // endregion **************************** field.gotpl *****************************
 
 // region    **************************** input.gotpl *****************************
@@ -1678,6 +1678,33 @@ func (ec *executionContext) _PaintersResp(ctx context.Context, sel ast.Selection
 			}
 		case "allPainters":
 			out.Values[i] = ec._PaintersResp_allPainters(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+var painters_PainterImplementors = []string{"Painters_Painter"}
+
+func (ec *executionContext) _Painters_Painter(ctx context.Context, sel ast.SelectionSet, obj *painters.Painter) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, painters_PainterImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	invalid := false
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Painters_Painter")
+		case "name":
+			out.Values[i] = ec._Painters_Painter_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
@@ -2082,33 +2109,6 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
-var painters_PainterImplementors = []string{"painters_Painter"}
-
-func (ec *executionContext) _painters_Painter(ctx context.Context, sel ast.SelectionSet, obj *painters.Painter) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, painters_PainterImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	invalid := false
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("painters_Painter")
-		case "name":
-			out.Values[i] = ec._painters_Painter_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalid = true
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalid {
-		return graphql.Null
-	}
-	return out
-}
-
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
@@ -2147,6 +2147,20 @@ func (ec *executionContext) marshalNPaintersResp2ᚖmarwanᚗioᚋprotocᚑgen�
 		return graphql.Null
 	}
 	return ec._PaintersResp(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPainters_Painter2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋpaintersᚐPainter(ctx context.Context, sel ast.SelectionSet, v painters.Painter) graphql.Marshaler {
+	return ec._Painters_Painter(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPainters_Painter2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋpaintersᚐPainter(ctx context.Context, sel ast.SelectionSet, v *painters.Painter) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Painters_Painter(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -2452,20 +2466,6 @@ func (ec *executionContext) unmarshalN__TypeKind2string(ctx context.Context, v i
 
 func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	return graphql.MarshalString(v)
-}
-
-func (ec *executionContext) marshalNpainters_Painter2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋpaintersᚐPainter(ctx context.Context, sel ast.SelectionSet, v painters.Painter) graphql.Marshaler {
-	return ec._painters_Painter(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNpainters_Painter2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋpaintersᚐPainter(ctx context.Context, sel ast.SelectionSet, v *painters.Painter) graphql.Marshaler {
-	if v == nil {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._painters_Painter(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {

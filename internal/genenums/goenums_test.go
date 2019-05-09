@@ -15,11 +15,12 @@ func TestGenEnums(t *testing.T) {
 	d := &Data{
 		ImportPath: "pkg.go/enums",
 		Pkg:        "enums",
-		Enums:      []string{"one"},
+		Name:       "one",
+		GoName:     "one",
 	}
 
 	var b bytes.Buffer
-	err := Render(d, &b)
+	err := Render([]*Data{d}, &b)
 	require.NoError(t, err)
 
 	if *update {

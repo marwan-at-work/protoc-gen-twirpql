@@ -8,24 +8,24 @@ import (
 	"context"
 	"errors"
 
-	"{{.ImportPath}}"
+	{{ range .Imports }}
+	"{{.}}"{{ end }}
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/ast"
 )
-{{- $pkg := .Pkg -}}
 {{ range .Enums }}
-func (ec *executionContext) _{{ . }}(ctx context.Context, sel ast.SelectionSet, v *{{$pkg}}.{{.}}) graphql.Marshaler {
+func (ec *executionContext) _{{ .Name }}(ctx context.Context, sel ast.SelectionSet, v *{{.Pkg}}.{{.GoName}}) graphql.Marshaler {
 	return graphql.MarshalString((*v).String())
 }
 
-func (ec *executionContext) unmarshalInput{{.}}(ctx context.Context, v interface{}) ({{$pkg}}.{{.}}, error) {
+func (ec *executionContext) unmarshalInput{{.Name}}(ctx context.Context, v interface{}) ({{.Pkg}}.{{.GoName}}, error) {
 	switch v := v.(type) {
 	case string:
-		intValue, ok := {{$pkg}}.{{.}}_value[v]
+		intValue, ok := {{.Pkg}}.{{.GoName}}_value[v]
 		if !ok {
 			return 0, errors.New("unknown value: " + v)
 		}
-		return {{$pkg}}.{{.}}(intValue), nil
+		return {{.Pkg}}.{{.GoName}}(intValue), nil
 	}
 	return 0, errors.New("wrong type")
 }

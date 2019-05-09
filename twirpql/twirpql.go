@@ -49,11 +49,11 @@ type twirpql struct {
 	// field.
 	emptys map[string]bool
 
-	// Enums are integers in protobuf but strings
+	// enums are integers in protobuf but strings
 	// in GraphQL. Therefore, we need to keep track
 	// of declared enums in the proto file so that
 	// we create proper conversion for the GraphQL queries.
-	enums map[string][]string
+	enums map[string]*enumData
 
 	// maps are all map<type, type> declarations
 	// in a protobuf file. Those get turned into
@@ -107,6 +107,13 @@ type twirpql struct {
 	protopkg pgs.Package
 }
 
+type enumData struct {
+	Name        string
+	ImportPath  string
+	PackageName string
+	Values      []string
+}
+
 // New configures the module with an instance of ModuleBase
 func New(importPath string) pgs.Module {
 	return &twirpql{
@@ -114,7 +121,7 @@ func New(importPath string) pgs.Module {
 		inputs:         map[string]*serviceType{},
 		types:          map[string]*serviceType{},
 		emptys:         map[string]bool{},
-		enums:          map[string][]string{},
+		enums:          map[string]*enumData{},
 		maps:           map[string]string{},
 		mapImports:     map[string]struct{}{},
 		gqlTypes:       gqlconfig.TypeMap{},
@@ -238,7 +245,7 @@ func (tql *twirpql) generateSchema(f pgs.File, out io.Writer) {
 		gqlFile.Types = append(gqlFile.Types, v)
 	}
 	for k, v := range tql.enums {
-		gqlFile.Enums = append(gqlFile.Enums, &enums{Name: k, Fields: v})
+		gqlFile.Enums = append(gqlFile.Enums, &enums{Name: k, Fields: v.Values})
 	}
 	for k := range tql.maps {
 		gqlFile.Scalars = append(gqlFile.Scalars, k)
@@ -258,15 +265,16 @@ func (tql *twirpql) bridgeEnums() {
 	f, err := os.Create(tql.path("enums.gen.go"))
 	must(err)
 	defer f.Close()
-	ed := &genenums.Data{
-		ImportPath: tql.modname,
-		Pkg:        tql.gopkgname,
-		Enums:      []string{},
+	all := []*genenums.Data{}
+	for k, v := range tql.enums {
+		all = append(all, &genenums.Data{
+			ImportPath: v.ImportPath,
+			Pkg:        v.PackageName,
+			Name:       k,
+			GoName:     v.Name,
+		})
 	}
-	for k := range tql.enums {
-		ed.Enums = append(ed.Enums, k)
-	}
-	must(genenums.Render(ed, f))
+	must(genenums.Render(all, f))
 }
 
 func (tql *twirpql) touchConfig(out io.Writer) {
@@ -342,12 +350,12 @@ func (tql *twirpql) setType(msg pgs.Message) {
 // For messgae declarations that are part of the target .proto file, they will stay the same
 // but if it's part of an import like "google.protobuf.Timestamp" then we combine the package name
 // with the Message namd to ensure we have no clashes so it becomes: "google_protobuf_Timestamp"
-func (tql *twirpql) getQualifiedName(msg pgs.Message) string {
+func (tql *twirpql) getQualifiedName(msg pgs.Entity) string {
 	if msg.Package() == tql.protopkg {
 		return msg.Name().String()
 	}
 	pkgName := strings.ReplaceAll(msg.Package().ProtoName().String(), ".", "_")
-	return pkgName + "_" + msg.Name().String()
+	return strings.Title(pkgName + "_" + msg.Name().String())
 }
 
 func (tql *twirpql) setInput(msg pgs.Message) {
@@ -418,13 +426,30 @@ func (tql *twirpql) setEnum(protoEnum pgs.Enum) {
 	for _, v := range protoEnum.Values() {
 		vals = append(vals, v.Name().String())
 	}
-	tql.enums[protoEnum.Name().String()] = vals
-	tql.setGraphQLEnum(protoEnum.Name().String())
+	name := tql.getQualifiedName(protoEnum)
+	tql.enums[name] = &enumData{
+		Name:        protoEnum.Name().String(),
+		ImportPath:  tql.deduceImportPath(protoEnum),
+		PackageName: tql.ctx.PackageName(protoEnum.File()).String(),
+		Values:      vals,
+	}
+	tql.setGraphQLEnum(name, protoEnum)
 }
 
-func (tql *twirpql) setGraphQLEnum(name string) {
+func (tql *twirpql) setGraphQLEnum(name string, enum pgs.Enum) {
+	importpath := tql.deduceImportPath(enum)
 	tql.gqlTypes[name] = gqlconfig.TypeMapEntry{
-		Model: gqlconfig.StringList{tql.modname + "." + name},
+		Model: gqlconfig.StringList{importpath + "." + enum.Name().String()},
+	}
+	// tql.gqlTypes[name] = gqlconfig.TypeMapEntry{
+	// 	Model: gqlconfig.StringList{tql.modname + "." + name},
+	// }
+}
+
+func (tql *twirpql) setBytes(fieldName string, f pgs.Field) {
+	tql.maps[fieldName] = tql.ctx.Type(f).Value().String()
+	tql.gqlTypes[fieldName] = gqlconfig.TypeMapEntry{
+		Model: gqlconfig.StringList{tql.destimportpath + "/twirpql." + fieldName},
 	}
 }
 
@@ -480,7 +505,11 @@ func (tql *twirpql) getFields(protoFields []pgs.Field, isType bool) []*serviceFi
 			}
 		case 14:
 			tql.setEnum(pf.Type().Enum())
-			tmp = tql.ctx.Type(pf).Value().String()
+			// tmp = tql.ctx.Type(pf).Value().String()
+			tmp = tql.getQualifiedName(pf.Type().Enum())
+		case 12:
+			tmp = strings.Title(f.Name)
+			tql.setBytes(tmp, pf)
 		default:
 			tmp = protoTypesToGqlTypes[pt.String()]
 			if tmp == "" {
@@ -522,7 +551,7 @@ var protoTypesToGqlTypes = map[string]string{
 	"TYPE_STRING":  "String",
 	// "TYPE_GROUP": "",
 	// "TYPE_MESSAGE": "", // must be mapped to its sibling type
-	"TYPE_BYTES":  "String",
+	// "TYPE_BYTES":  "", // TODO: look into making it a string and not Scalar
 	"TYPE_UINT32": "Int",
 	// "TYPE_ENUM": "", // mapped to its sibling type
 	// "TYPE_SFIXED32": "",

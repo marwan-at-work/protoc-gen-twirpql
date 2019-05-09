@@ -14,6 +14,9 @@ models:
   HelloResp:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.HelloResp
+  Painters_Painter:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e/painters.Painter
   PaintersResp:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.PaintersResp
@@ -38,6 +41,3 @@ models:
   Words:
     model:
     - marwan.io/protoc-gen-twirpql/e2e/twirpql.Words
-  painters_Painter:
-    model:
-    - marwan.io/protoc-gen-twirpql/e2e/painters.Painter

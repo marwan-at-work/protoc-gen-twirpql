@@ -14,8 +14,12 @@ type HelloResp {
 }
 
 type PaintersResp {
-	bestPainter: painters_Painter!
+	bestPainter: Painters_Painter!
 	allPainters: [String]!
+}
+
+type Painters_Painter {
+	name: String!
 }
 
 type TrafficJamResp {
@@ -24,10 +28,6 @@ type TrafficJamResp {
 
 type TranslateResp {
 	translations: Translations!
-}
-
-type painters_Painter {
-	name: String!
 }
 
 input HelloReq {
