@@ -1,5 +1,16 @@
 package twirpql
 
+import (
+	"strings"
+	"text/template"
+)
+
+var schemaFuncs = template.FuncMap{
+	"fmtUnions": func(types []string) string {
+		return strings.Join(types, " | ")
+	},
+}
+
 const schemaTemplate = `schema {
     query: Query
 }
@@ -27,4 +38,7 @@ enum {{.Name}} { {{range .Fields}}
 {{range .Scalars}}
 scalar {{.}}
 {{end}}
+{{range .Unions}}
+union {{.Name}} = {{fmtUnions .Types }}
+{{ end }}
 `

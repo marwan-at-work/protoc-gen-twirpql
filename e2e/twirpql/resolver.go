@@ -12,11 +12,20 @@ type Resolver struct {
 	e2e.Service
 }
 
+func (r *Resolver) BreadResp() BreadRespResolver {
+	return &breadRespResolver{r}
+}
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
 func (r *Resolver) TranslateResp() TranslateRespResolver {
 	return &translateRespResolver{r}
+}
+
+type breadRespResolver struct{ *Resolver }
+
+func (r *breadRespResolver) Answer(ctx context.Context, obj *e2e.BreadResp) (unionMask, error) {
+	return obj.GetAnswer(), nil
 }
 
 type queryResolver struct{ *Resolver }
@@ -35,6 +44,10 @@ func (r *queryResolver) GetPainters(ctx context.Context) (*e2e.PaintersResp, err
 
 func (r *queryResolver) Translate(ctx context.Context, req *e2e.TranslateReq) (*e2e.TranslateResp, error) {
 	return r.Service.Translate(ctx, req)
+}
+
+func (r *queryResolver) Bread(ctx context.Context, req *e2e.BreadReq) (*e2e.BreadResp, error) {
+	return r.Service.Bread(ctx, req)
 }
 
 type translateRespResolver struct{ *Resolver }

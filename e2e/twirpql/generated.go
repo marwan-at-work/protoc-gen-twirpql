@@ -6,8 +6,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -35,6 +37,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	BreadResp() BreadRespResolver
 	Query() QueryResolver
 	TranslateResp() TranslateRespResolver
 }
@@ -43,6 +46,18 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	BreadResp struct {
+		Answer func(childComplexity int) int
+	}
+
+	BreadRespAnswerName struct {
+		Name func(childComplexity int) int
+	}
+
+	BreadRespAnswerToasted struct {
+		Toasted func(childComplexity int) int
+	}
+
 	HelloResp struct {
 		Text func(childComplexity int) int
 	}
@@ -57,6 +72,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Bread       func(childComplexity int, req *e2e.BreadReq) int
 		GetPainters func(childComplexity int) int
 		Hello       func(childComplexity int, req *e2e.HelloReq) int
 		TrafficJam  func(childComplexity int, req *e2e.TrafficJamReq) int
@@ -72,11 +88,15 @@ type ComplexityRoot struct {
 	}
 }
 
+type BreadRespResolver interface {
+	Answer(ctx context.Context, obj *e2e.BreadResp) (unionMask, error)
+}
 type QueryResolver interface {
 	Hello(ctx context.Context, req *e2e.HelloReq) (*e2e.HelloResp, error)
 	TrafficJam(ctx context.Context, req *e2e.TrafficJamReq) (*e2e.TrafficJamResp, error)
 	GetPainters(ctx context.Context) (*e2e.PaintersResp, error)
 	Translate(ctx context.Context, req *e2e.TranslateReq) (*e2e.TranslateResp, error)
+	Bread(ctx context.Context, req *e2e.BreadReq) (*e2e.BreadResp, error)
 }
 type TranslateRespResolver interface {
 	Translations(ctx context.Context, obj *e2e.TranslateResp) (Translations, error)
@@ -97,85 +117,118 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "HelloResp.Text":
+	case "BreadResp.answer":
+		if e.complexity.BreadResp.Answer == nil {
+			break
+		}
+
+		return e.complexity.BreadResp.Answer(childComplexity), true
+
+	case "BreadRespAnswerName.name":
+		if e.complexity.BreadRespAnswerName.Name == nil {
+			break
+		}
+
+		return e.complexity.BreadRespAnswerName.Name(childComplexity), true
+
+	case "BreadRespAnswerToasted.toasted":
+		if e.complexity.BreadRespAnswerToasted.Toasted == nil {
+			break
+		}
+
+		return e.complexity.BreadRespAnswerToasted.Toasted(childComplexity), true
+
+	case "HelloResp.text":
 		if e.complexity.HelloResp.Text == nil {
 			break
 		}
 
 		return e.complexity.HelloResp.Text(childComplexity), true
 
-	case "PaintersResp.AllPainters":
+	case "PaintersResp.allPainters":
 		if e.complexity.PaintersResp.AllPainters == nil {
 			break
 		}
 
 		return e.complexity.PaintersResp.AllPainters(childComplexity), true
 
-	case "PaintersResp.BestPainter":
+	case "PaintersResp.bestPainter":
 		if e.complexity.PaintersResp.BestPainter == nil {
 			break
 		}
 
 		return e.complexity.PaintersResp.BestPainter(childComplexity), true
 
-	case "Painters_Painter.Name":
+	case "Painters_Painter.name":
 		if e.complexity.PaintersPainter.Name == nil {
 			break
 		}
 
 		return e.complexity.PaintersPainter.Name(childComplexity), true
 
-	case "Query.GetPainters":
+	case "Query.bread":
+		if e.complexity.Query.Bread == nil {
+			break
+		}
+
+		args, err := ec.field_Query_bread_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Bread(childComplexity, args["req"].(*e2e.BreadReq)), true
+
+	case "Query.getPainters":
 		if e.complexity.Query.GetPainters == nil {
 			break
 		}
 
 		return e.complexity.Query.GetPainters(childComplexity), true
 
-	case "Query.Hello":
+	case "Query.hello":
 		if e.complexity.Query.Hello == nil {
 			break
 		}
 
-		args, err := ec.field_Query_Hello_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_hello_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Query.Hello(childComplexity, args["req"].(*e2e.HelloReq)), true
 
-	case "Query.TrafficJam":
+	case "Query.trafficJam":
 		if e.complexity.Query.TrafficJam == nil {
 			break
 		}
 
-		args, err := ec.field_Query_TrafficJam_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_trafficJam_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Query.TrafficJam(childComplexity, args["req"].(*e2e.TrafficJamReq)), true
 
-	case "Query.Translate":
+	case "Query.translate":
 		if e.complexity.Query.Translate == nil {
 			break
 		}
 
-		args, err := ec.field_Query_Translate_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_translate_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Query.Translate(childComplexity, args["req"].(*e2e.TranslateReq)), true
 
-	case "TrafficJamResp.Next":
+	case "TrafficJamResp.next":
 		if e.complexity.TrafficJamResp.Next == nil {
 			break
 		}
 
 		return e.complexity.TrafficJamResp.Next(childComplexity), true
 
-	case "TranslateResp.Translations":
+	case "TranslateResp.translations":
 		if e.complexity.TranslateResp.Translations == nil {
 			break
 		}
@@ -251,10 +304,23 @@ var parsedSchema = gqlparser.MustLoadSchema(
 }
 
 type Query {
-	Hello(req: HelloReq): HelloResp!
-	TrafficJam(req: TrafficJamReq): TrafficJamResp!
-	GetPainters: PaintersResp!
-	Translate(req: TranslateReq): TranslateResp!
+	hello(req: HelloReq): HelloResp!
+	trafficJam(req: TrafficJamReq): TrafficJamResp!
+	getPainters: PaintersResp!
+	translate(req: TranslateReq): TranslateResp!
+	bread(req: BreadReq): BreadResp!
+}
+
+type BreadResp {
+	answer: BreadRespAnswer!
+}
+
+type BreadRespAnswerName {
+	name: String!
+}
+
+type BreadRespAnswerToasted {
+	toasted: Boolean!
 }
 
 type HelloResp {
@@ -278,6 +344,10 @@ type TranslateResp {
 	translations: Translations!
 }
 
+input BreadReq {
+	count: Int!
+}
+
 input HelloReq {
 	name: String!
 }
@@ -299,6 +369,8 @@ enum TrafficLight {
 scalar Translations
 
 scalar Words
+
+union BreadRespAnswer = BreadRespAnswerName | BreadRespAnswerToasted
 `},
 )
 
@@ -306,7 +378,35 @@ scalar Words
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Query_Hello_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["name"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_bread_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *e2e.BreadReq
+	if tmp, ok := rawArgs["req"]; ok {
+		arg0, err = ec.unmarshalOBreadReq2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐBreadReq(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["req"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_hello_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *e2e.HelloReq
@@ -320,7 +420,7 @@ func (ec *executionContext) field_Query_Hello_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_TrafficJam_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_trafficJam_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *e2e.TrafficJamReq
@@ -334,7 +434,7 @@ func (ec *executionContext) field_Query_TrafficJam_args(ctx context.Context, raw
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_Translate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_translate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *e2e.TranslateReq
@@ -345,20 +445,6 @@ func (ec *executionContext) field_Query_Translate_args(ctx context.Context, rawA
 		}
 	}
 	args["req"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["name"]; ok {
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["name"] = arg0
 	return args, nil
 }
 
@@ -393,6 +479,87 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _BreadResp_answer(ctx context.Context, field graphql.CollectedField, obj *e2e.BreadResp) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "BreadResp",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.BreadResp().Answer(rctx, obj)
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(unionMask)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNBreadRespAnswer2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐunionMask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BreadRespAnswerName_name(ctx context.Context, field graphql.CollectedField, obj *e2e.BreadResp_Name) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "BreadRespAnswerName",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BreadRespAnswerToasted_toasted(ctx context.Context, field graphql.CollectedField, obj *e2e.BreadResp_Toasted) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "BreadRespAnswerToasted",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Toasted, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _HelloResp_text(ctx context.Context, field graphql.CollectedField, obj *e2e.HelloResp) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
@@ -502,7 +669,7 @@ func (ec *executionContext) _Painters_Painter_name(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_Hello(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+func (ec *executionContext) _Query_hello(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -513,7 +680,7 @@ func (ec *executionContext) _Query_Hello(ctx context.Context, field graphql.Coll
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_Hello_args(ctx, rawArgs)
+	args, err := ec.field_Query_hello_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -536,7 +703,7 @@ func (ec *executionContext) _Query_Hello(ctx context.Context, field graphql.Coll
 	return ec.marshalNHelloResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐHelloResp(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_TrafficJam(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+func (ec *executionContext) _Query_trafficJam(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -547,7 +714,7 @@ func (ec *executionContext) _Query_TrafficJam(ctx context.Context, field graphql
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_TrafficJam_args(ctx, rawArgs)
+	args, err := ec.field_Query_trafficJam_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -570,7 +737,7 @@ func (ec *executionContext) _Query_TrafficJam(ctx context.Context, field graphql
 	return ec.marshalNTrafficJamResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficJamResp(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_GetPainters(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+func (ec *executionContext) _Query_getPainters(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -597,7 +764,7 @@ func (ec *executionContext) _Query_GetPainters(ctx context.Context, field graphq
 	return ec.marshalNPaintersResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐPaintersResp(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_Translate(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+func (ec *executionContext) _Query_translate(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -608,7 +775,7 @@ func (ec *executionContext) _Query_Translate(ctx context.Context, field graphql.
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_Translate_args(ctx, rawArgs)
+	args, err := ec.field_Query_translate_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -629,6 +796,40 @@ func (ec *executionContext) _Query_Translate(ctx context.Context, field graphql.
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNTranslateResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateResp(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_bread(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_bread_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Bread(rctx, args["req"].(*e2e.BreadReq))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*e2e.BreadResp)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNBreadResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐBreadResp(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
@@ -1571,6 +1772,24 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputBreadReq(ctx context.Context, v interface{}) (e2e.BreadReq, error) {
+	var it e2e.BreadReq
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "count":
+			var err error
+			it.Count, err = ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputHelloReq(ctx context.Context, v interface{}) (e2e.HelloReq, error) {
 	var it e2e.HelloReq
 	var asMap = v.(map[string]interface{})
@@ -1629,17 +1848,124 @@ func (ec *executionContext) unmarshalInputTranslateReq(ctx context.Context, v in
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _BreadRespAnswer(ctx context.Context, sel ast.SelectionSet, obj *unionMask) graphql.Marshaler {
+	switch obj := (*obj).(type) {
+	case nil:
+		return graphql.Null
+	case e2e.BreadResp_Name:
+		return ec._BreadRespAnswerName(ctx, sel, &obj)
+	case *e2e.BreadResp_Name:
+		return ec._BreadRespAnswerName(ctx, sel, obj)
+	case e2e.BreadResp_Toasted:
+		return ec._BreadRespAnswerToasted(ctx, sel, &obj)
+	case *e2e.BreadResp_Toasted:
+		return ec._BreadRespAnswerToasted(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
 
+var breadRespImplementors = []string{"BreadResp"}
+
+func (ec *executionContext) _BreadResp(ctx context.Context, sel ast.SelectionSet, obj *e2e.BreadResp) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, breadRespImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BreadResp")
+		case "answer":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._BreadResp_answer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var breadRespAnswerNameImplementors = []string{"BreadRespAnswerName", "BreadRespAnswer"}
+
+func (ec *executionContext) _BreadRespAnswerName(ctx context.Context, sel ast.SelectionSet, obj *e2e.BreadResp_Name) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, breadRespAnswerNameImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BreadRespAnswerName")
+		case "name":
+			out.Values[i] = ec._BreadRespAnswerName_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var breadRespAnswerToastedImplementors = []string{"BreadRespAnswerToasted", "BreadRespAnswer"}
+
+func (ec *executionContext) _BreadRespAnswerToasted(ctx context.Context, sel ast.SelectionSet, obj *e2e.BreadResp_Toasted) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, breadRespAnswerToastedImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BreadRespAnswerToasted")
+		case "toasted":
+			out.Values[i] = ec._BreadRespAnswerToasted_toasted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var helloRespImplementors = []string{"HelloResp"}
 
 func (ec *executionContext) _HelloResp(ctx context.Context, sel ast.SelectionSet, obj *e2e.HelloResp) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, helloRespImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, helloRespImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -1647,14 +1973,14 @@ func (ec *executionContext) _HelloResp(ctx context.Context, sel ast.SelectionSet
 		case "text":
 			out.Values[i] = ec._HelloResp_text(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1663,10 +1989,10 @@ func (ec *executionContext) _HelloResp(ctx context.Context, sel ast.SelectionSet
 var paintersRespImplementors = []string{"PaintersResp"}
 
 func (ec *executionContext) _PaintersResp(ctx context.Context, sel ast.SelectionSet, obj *e2e.PaintersResp) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, paintersRespImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, paintersRespImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -1674,19 +2000,19 @@ func (ec *executionContext) _PaintersResp(ctx context.Context, sel ast.Selection
 		case "bestPainter":
 			out.Values[i] = ec._PaintersResp_bestPainter(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "allPainters":
 			out.Values[i] = ec._PaintersResp_allPainters(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1695,10 +2021,10 @@ func (ec *executionContext) _PaintersResp(ctx context.Context, sel ast.Selection
 var painters_PainterImplementors = []string{"Painters_Painter"}
 
 func (ec *executionContext) _Painters_Painter(ctx context.Context, sel ast.SelectionSet, obj *painters.Painter) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, painters_PainterImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, painters_PainterImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -1706,14 +2032,14 @@ func (ec *executionContext) _Painters_Painter(ctx context.Context, sel ast.Selec
 		case "name":
 			out.Values[i] = ec._Painters_Painter_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1722,19 +2048,19 @@ func (ec *executionContext) _Painters_Painter(ctx context.Context, sel ast.Selec
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, queryImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, queryImplementors)
 
 	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
 		Object: "Query",
 	})
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "Hello":
+		case "hello":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1742,13 +2068,13 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Hello(ctx, field)
+				res = ec._Query_hello(ctx, field)
 				if res == graphql.Null {
-					invalid = true
+					atomic.AddUint32(&invalids, 1)
 				}
 				return res
 			})
-		case "TrafficJam":
+		case "trafficJam":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1756,13 +2082,13 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_TrafficJam(ctx, field)
+				res = ec._Query_trafficJam(ctx, field)
 				if res == graphql.Null {
-					invalid = true
+					atomic.AddUint32(&invalids, 1)
 				}
 				return res
 			})
-		case "GetPainters":
+		case "getPainters":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1770,13 +2096,13 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_GetPainters(ctx, field)
+				res = ec._Query_getPainters(ctx, field)
 				if res == graphql.Null {
-					invalid = true
+					atomic.AddUint32(&invalids, 1)
 				}
 				return res
 			})
-		case "Translate":
+		case "translate":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1784,9 +2110,23 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Translate(ctx, field)
+				res = ec._Query_translate(ctx, field)
 				if res == graphql.Null {
-					invalid = true
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "bread":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_bread(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
 				}
 				return res
 			})
@@ -1799,7 +2139,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1808,10 +2148,10 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 var trafficJamRespImplementors = []string{"TrafficJamResp"}
 
 func (ec *executionContext) _TrafficJamResp(ctx context.Context, sel ast.SelectionSet, obj *e2e.TrafficJamResp) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, trafficJamRespImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, trafficJamRespImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -1819,14 +2159,14 @@ func (ec *executionContext) _TrafficJamResp(ctx context.Context, sel ast.Selecti
 		case "next":
 			out.Values[i] = ec._TrafficJamResp_next(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1835,10 +2175,10 @@ func (ec *executionContext) _TrafficJamResp(ctx context.Context, sel ast.Selecti
 var translateRespImplementors = []string{"TranslateResp"}
 
 func (ec *executionContext) _TranslateResp(ctx context.Context, sel ast.SelectionSet, obj *e2e.TranslateResp) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, translateRespImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, translateRespImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -1853,7 +2193,7 @@ func (ec *executionContext) _TranslateResp(ctx context.Context, sel ast.Selectio
 				}()
 				res = ec._TranslateResp_translations(ctx, field, obj)
 				if res == graphql.Null {
-					invalid = true
+					atomic.AddUint32(&invalids, 1)
 				}
 				return res
 			})
@@ -1862,7 +2202,7 @@ func (ec *executionContext) _TranslateResp(ctx context.Context, sel ast.Selectio
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1871,10 +2211,10 @@ func (ec *executionContext) _TranslateResp(ctx context.Context, sel ast.Selectio
 var __DirectiveImplementors = []string{"__Directive"}
 
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __DirectiveImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __DirectiveImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -1882,26 +2222,26 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 		case "name":
 			out.Values[i] = ec.___Directive_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "description":
 			out.Values[i] = ec.___Directive_description(ctx, field, obj)
 		case "locations":
 			out.Values[i] = ec.___Directive_locations(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "args":
 			out.Values[i] = ec.___Directive_args(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1910,10 +2250,10 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 var __EnumValueImplementors = []string{"__EnumValue"}
 
 func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionSet, obj *introspection.EnumValue) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __EnumValueImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __EnumValueImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -1921,14 +2261,14 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 		case "name":
 			out.Values[i] = ec.___EnumValue_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "description":
 			out.Values[i] = ec.___EnumValue_description(ctx, field, obj)
 		case "isDeprecated":
 			out.Values[i] = ec.___EnumValue_isDeprecated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "deprecationReason":
 			out.Values[i] = ec.___EnumValue_deprecationReason(ctx, field, obj)
@@ -1937,7 +2277,7 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1946,10 +2286,10 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 var __FieldImplementors = []string{"__Field"}
 
 func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, obj *introspection.Field) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __FieldImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __FieldImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -1957,24 +2297,24 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 		case "name":
 			out.Values[i] = ec.___Field_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "description":
 			out.Values[i] = ec.___Field_description(ctx, field, obj)
 		case "args":
 			out.Values[i] = ec.___Field_args(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "type":
 			out.Values[i] = ec.___Field_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "isDeprecated":
 			out.Values[i] = ec.___Field_isDeprecated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "deprecationReason":
 			out.Values[i] = ec.___Field_deprecationReason(ctx, field, obj)
@@ -1983,7 +2323,7 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -1992,10 +2332,10 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 var __InputValueImplementors = []string{"__InputValue"}
 
 func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.SelectionSet, obj *introspection.InputValue) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __InputValueImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __InputValueImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2003,14 +2343,14 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 		case "name":
 			out.Values[i] = ec.___InputValue_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "description":
 			out.Values[i] = ec.___InputValue_description(ctx, field, obj)
 		case "type":
 			out.Values[i] = ec.___InputValue_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "defaultValue":
 			out.Values[i] = ec.___InputValue_defaultValue(ctx, field, obj)
@@ -2019,7 +2359,7 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2028,10 +2368,10 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 var __SchemaImplementors = []string{"__Schema"}
 
 func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet, obj *introspection.Schema) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __SchemaImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __SchemaImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2039,12 +2379,12 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 		case "types":
 			out.Values[i] = ec.___Schema_types(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "queryType":
 			out.Values[i] = ec.___Schema_queryType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "mutationType":
 			out.Values[i] = ec.___Schema_mutationType(ctx, field, obj)
@@ -2053,14 +2393,14 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 		case "directives":
 			out.Values[i] = ec.___Schema_directives(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2069,10 +2409,10 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 var __TypeImplementors = []string{"__Type"}
 
 func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, obj *introspection.Type) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __TypeImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __TypeImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2080,7 +2420,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 		case "kind":
 			out.Values[i] = ec.___Type_kind(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "name":
 			out.Values[i] = ec.___Type_name(ctx, field, obj)
@@ -2103,7 +2443,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2118,7 +2458,31 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interf
 }
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
-	return graphql.MarshalBoolean(v)
+	res := graphql.MarshalBoolean(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNBreadResp2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐBreadResp(ctx context.Context, sel ast.SelectionSet, v e2e.BreadResp) graphql.Marshaler {
+	return ec._BreadResp(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNBreadResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐBreadResp(ctx context.Context, sel ast.SelectionSet, v *e2e.BreadResp) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._BreadResp(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNBreadRespAnswer2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐunionMask(ctx context.Context, sel ast.SelectionSet, v unionMask) graphql.Marshaler {
+	return ec._BreadRespAnswer(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNHelloResp2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐHelloResp(ctx context.Context, sel ast.SelectionSet, v e2e.HelloResp) graphql.Marshaler {
@@ -2133,6 +2497,20 @@ func (ec *executionContext) marshalNHelloResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtw
 		return graphql.Null
 	}
 	return ec._HelloResp(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v interface{}) (int64, error) {
+	return graphql.UnmarshalInt64(v)
+}
+
+func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalNPaintersResp2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐPaintersResp(ctx context.Context, sel ast.SelectionSet, v e2e.PaintersResp) graphql.Marshaler {
@@ -2168,7 +2546,13 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v inter
 }
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	return graphql.MarshalString(v)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNString2ᚕstring(ctx context.Context, v interface{}) ([]string, error) {
@@ -2300,7 +2684,13 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2string(ctx context.Con
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	return graphql.MarshalString(v)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstring(ctx context.Context, v interface{}) ([]string, error) {
@@ -2465,7 +2855,13 @@ func (ec *executionContext) unmarshalN__TypeKind2string(ctx context.Context, v i
 }
 
 func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	return graphql.MarshalString(v)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
@@ -2489,6 +2885,18 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOBreadReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐBreadReq(ctx context.Context, v interface{}) (e2e.BreadReq, error) {
+	return ec.unmarshalInputBreadReq(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOBreadReq2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐBreadReq(ctx context.Context, v interface{}) (*e2e.BreadReq, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOBreadReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐBreadReq(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) unmarshalOHelloReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐHelloReq(ctx context.Context, v interface{}) (e2e.HelloReq, error) {

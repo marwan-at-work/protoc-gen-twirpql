@@ -34,6 +34,7 @@ type formatter struct {
 	inputs  []string
 	scalars []string
 	enums   []string
+	unions  []string
 }
 
 func (f *formatter) print() {
@@ -44,6 +45,7 @@ func (f *formatter) print() {
 	f.printInputs()
 	f.printEnums()
 	f.printScalars()
+	f.printUnions()
 }
 
 func (f *formatter) sortDeclarations() {
@@ -61,12 +63,15 @@ func (f *formatter) sortDeclarations() {
 			f.enums = append(f.enums, k)
 		case ast.Scalar:
 			f.scalars = append(f.scalars, k)
+		case ast.Union:
+			f.unions = append(f.unions, k)
 		}
 
 		sort.Strings(f.types)
 		sort.Strings(f.inputs)
 		sort.Strings(f.enums)
 		sort.Strings(f.scalars)
+		sort.Strings(f.unions)
 	}
 }
 
@@ -122,14 +127,6 @@ func (f *formatter) printInputs() {
 	}
 }
 
-func (f *formatter) printScalars() {
-	for _, t := range f.scalars {
-		f.out.Write([]byte{'\n'})
-		typeDecl := f.schema.Types[t]
-		f.out.Write([]byte("scalar " + typeDecl.Name + "\n"))
-	}
-}
-
 func (f *formatter) printEnums() {
 	for _, t := range f.enums {
 		f.out.Write([]byte{'\n'})
@@ -140,5 +137,22 @@ func (f *formatter) printEnums() {
 			fmt.Fprintf(f.out, "%v\n", field.Name)
 		}
 		f.out.Write([]byte{'}', '\n'})
+	}
+}
+
+func (f *formatter) printScalars() {
+	for _, t := range f.scalars {
+		f.out.Write([]byte{'\n'})
+		typeDecl := f.schema.Types[t]
+		f.out.Write([]byte("scalar " + typeDecl.Name + "\n"))
+	}
+}
+
+func (f *formatter) printUnions() {
+	for _, t := range f.unions {
+		f.out.Write([]byte{'\n'})
+		decl := f.schema.Types[t]
+		sort.Strings(decl.Types)
+		f.out.Write([]byte(fmt.Sprintf("union %v = %v\n", decl.Name, strings.Join(decl.Types, " | "))))
 	}
 }

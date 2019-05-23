@@ -3,7 +3,7 @@ schema {
 }
 
 type Query {
-	Hello: HelloResp!
+	hello: HelloResp!
 }
 
 type HelloResp {

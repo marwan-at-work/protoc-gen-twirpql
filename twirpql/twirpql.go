@@ -20,6 +20,7 @@ import (
 	"marwan.io/protoc-gen-twirpql/internal/genresolver"
 	"marwan.io/protoc-gen-twirpql/internal/genscalar"
 	"marwan.io/protoc-gen-twirpql/internal/genserver"
+	"marwan.io/protoc-gen-twirpql/internal/genunions"
 	"marwan.io/protoc-gen-twirpql/internal/gqlfmt"
 )
 
@@ -42,6 +43,13 @@ type twirpql struct {
 	// found inside an RPC's Return so that GraphQL
 	// interprets it as a "Type" declaration.
 	types map[string]*serviceType
+
+	// a "union" represents a schema.graphql
+	// Union definition which originates from
+	// a protobuf `oneof` declaration inside
+	// a message.
+	unions     map[string]*union
+	unionNames map[string]bool
 
 	// an empty type keeps track of empty returns
 	// because GraphQL Types can't be empty
@@ -124,8 +132,10 @@ func New(importPath string) pgs.Module {
 		enums:          map[string]*enumData{},
 		maps:           map[string]string{},
 		mapImports:     map[string]struct{}{},
+		unions:         map[string]*union{},
+		unionNames:     map[string]bool{},
 		gqlTypes:       gqlconfig.TypeMap{},
-		tmpl:           template.Must(template.New("").Parse(schemaTemplate)),
+		tmpl:           template.Must(template.New("").Funcs(schemaFuncs).Parse(schemaTemplate)),
 		modname:        importPath,
 		ctx:            pgsgo.InitContext(pgs.ParseParameters("")),
 		destpkgname:    "./twirpql",
@@ -183,6 +193,9 @@ func (tql *twirpql) Execute(targets map[string]pgs.File, pkgs map[string]pgs.Pac
 	tql.touchConfig(f)
 	if len(tql.enums) > 0 {
 		tql.bridgeEnums()
+	}
+	if len(tql.unions) > 0 {
+		tql.writeUnionMask()
 	}
 	tql.initGql(tql.svcname)
 
@@ -250,6 +263,9 @@ func (tql *twirpql) generateSchema(f pgs.File, out io.Writer) {
 	for k := range tql.maps {
 		gqlFile.Scalars = append(gqlFile.Scalars, k)
 	}
+	for _, v := range tql.unions {
+		gqlFile.Unions = append(gqlFile.Unions, v)
+	}
 
 	var buf bytes.Buffer
 
@@ -299,7 +315,7 @@ func (tql *twirpql) initGql(svcName string) {
 		cfg,
 		api.NoPlugins(),
 		api.AddPlugin(modelgen.New()),
-		api.AddPlugin(genresolver.New(svcName, tql.gopkgname, emptys, tql.maps)),
+		api.AddPlugin(genresolver.New(svcName, tql.gopkgname, emptys, tql.maps, tql.unionNames)),
 		api.AddPlugin(genserver.New(tql.path("server.go"), tql.modname, svcName)),
 	)
 	must(err)
@@ -322,8 +338,9 @@ func (tql *twirpql) getMethods(protoMethods []pgs.Method) []*method {
 
 	for _, pm := range protoMethods {
 		var m method
-		m.Name = pm.Name().String()
-		emptyInput := len(pm.Input().Fields()) == 0
+		m.Name = pm.Name().LowerCamelCase().String()
+		// TODO: make oneOf fields a scalar in inputs
+		emptyInput := len(pm.Input().NonOneOfFields()) == 0
 		if !emptyInput {
 			tql.setInput(pm.Input())
 			m.Request = tql.formatQueryInput(pm.Input())
@@ -343,7 +360,60 @@ func (tql *twirpql) setType(msg pgs.Message) {
 	i.Name = typeName
 	tql.types[i.Name] = &i
 	tql.setGraphQLType(i.Name, msg)
-	i.Fields = tql.getFields(msg.Fields(), true)
+	i.Fields = tql.getFields(msg.NonOneOfFields(), true)
+	i.Fields = append(i.Fields, tql.getUnionFields(msg)...)
+}
+
+func (tql *twirpql) getUnionFields(msg pgs.Message) []*serviceField {
+	sff := []*serviceField{}
+	for _, oo := range msg.OneOfs() {
+		unionTypes := []string{}
+		unionName := tql.getUnionName(oo)
+		for _, f := range oo.Fields() {
+			tql.setUnionType(f) // side effect
+			unionTypes = append(unionTypes, tql.getUnionFieldWrapperName(f))
+		}
+		// side effect
+		tql.unionNames[oo.Name().UpperCamelCase().String()] = true
+		tql.unions[unionName] = &union{
+			Name:  unionName,
+			Types: unionTypes,
+		}
+		importpath := tql.destimportpath + "/twirpql"
+		tql.gqlTypes[tql.getUnionName(oo)] = gqlconfig.TypeMapEntry{
+			Model: gqlconfig.StringList{importpath + "." + "unionMask"},
+		}
+		var sf serviceField
+		sf.Name = oo.Name().String()
+		sf.Type = tql.getUnionName(oo)
+		sff = append(sff, &sf)
+	}
+	return sff
+}
+
+func (tql *twirpql) setUnionType(f pgs.Field) {
+	typeName := tql.getUnionFieldWrapperName(f)
+	if _, ok := tql.types[typeName]; ok {
+		return
+	}
+	var i serviceType
+	i.Name = typeName
+	i.Fields = []*serviceField{tql.getField(f, true)}
+	tql.types[i.Name] = &i
+	// protoName might have unlimited trailing "_"s.
+	// See: https://github.com/golang/protobuf/blob/master/protoc-gen-go/generator/generator.go#L2334
+	protoName := f.Message().Name().String() + "_" + strings.Title(f.Name().String())
+	tql.gqlTypes[i.Name] = gqlconfig.TypeMapEntry{
+		Model: gqlconfig.StringList{tql.deduceImportPath(f) + "." + protoName},
+	}
+}
+
+func (tql *twirpql) getUnionFieldWrapperName(f pgs.Field) string {
+	return tql.getUnionName(f.OneOf()) + f.Name().UpperCamelCase().String()
+}
+
+func (tql *twirpql) getUnionName(field pgs.OneOf) string {
+	return tql.getQualifiedName(field.Message()) + field.Name().UpperCamelCase().String()
 }
 
 // getQualifiedName returns the name that will be defined inside the GraphQL Schema File.
@@ -366,7 +436,8 @@ func (tql *twirpql) setInput(msg pgs.Message) {
 	i.Name = tql.getInputName(msg)
 	tql.inputs[i.Name] = &i
 	tql.setGraphQLType(i.Name, msg)
-	i.Fields = tql.getFields(msg.Fields(), false)
+	// TODO: make oneOf fields scalars.
+	i.Fields = tql.getFields(msg.NonOneOfFields(), false)
 }
 
 // getInputName returns exactly the name of the message declaration:
@@ -422,11 +493,14 @@ func (tql *twirpql) deduceImportPath(msg pgs.Entity) string {
 }
 
 func (tql *twirpql) setEnum(protoEnum pgs.Enum) {
+	name := tql.getQualifiedName(protoEnum)
+	if _, ok := tql.enums[name]; ok {
+		return
+	}
 	vals := []string{}
 	for _, v := range protoEnum.Values() {
 		vals = append(vals, v.Name().String())
 	}
-	name := tql.getQualifiedName(protoEnum)
 	tql.enums[name] = &enumData{
 		Name:        protoEnum.Name().String(),
 		ImportPath:  tql.deduceImportPath(protoEnum),
@@ -441,9 +515,6 @@ func (tql *twirpql) setGraphQLEnum(name string, enum pgs.Enum) {
 	tql.gqlTypes[name] = gqlconfig.TypeMapEntry{
 		Model: gqlconfig.StringList{importpath + "." + enum.Name().String()},
 	}
-	// tql.gqlTypes[name] = gqlconfig.TypeMapEntry{
-	// 	Model: gqlconfig.StringList{tql.modname + "." + name},
-	// }
 }
 
 func (tql *twirpql) setBytes(fieldName string, f pgs.Field) {
@@ -479,50 +550,61 @@ func (tql *twirpql) setMap(fieldName string, f pgs.Field) {
 func (tql *twirpql) getFields(protoFields []pgs.Field, isType bool) []*serviceField {
 	fields := []*serviceField{}
 	for _, pf := range protoFields {
-		var f serviceField
-		f.Name = pf.Name().String()
-		pt := pf.Type().ProtoType().Proto()
-		var tmp string
-		switch pt {
-		case 11:
-			if pf.Type().IsMap() {
-				tql.setMap(f.Name, pf)
-				tmp = strings.Title(f.Name)
-			} else {
-				var msg pgs.Message
-				if pf.Type().IsRepeated() {
-					msg = pf.Type().Element().Embed()
-				} else {
-					msg = pf.Type().Embed()
-				}
-				if isType {
-					tmp = tql.getQualifiedName(msg)
-					tql.setType(msg)
-				} else {
-					tmp = tql.getInputName(msg)
-					tql.setInput(msg)
-				}
-			}
-		case 14:
-			tql.setEnum(pf.Type().Enum())
-			// tmp = tql.ctx.Type(pf).Value().String()
-			tmp = tql.getQualifiedName(pf.Type().Enum())
-		case 12:
-			tmp = strings.Title(f.Name)
-			tql.setBytes(tmp, pf)
-		default:
-			tmp = protoTypesToGqlTypes[pt.String()]
-			if tmp == "" {
-				panic("unsupported type: " + pt.String())
-			}
-		}
-		if pf.Type().IsRepeated() {
-			tmp = fmt.Sprintf("[%v]", tmp)
-		}
-		f.Type = tmp
-		fields = append(fields, &f)
+		fields = append(fields, tql.getField(pf, isType))
 	}
 	return fields
+}
+
+func (tql *twirpql) writeUnionMask() {
+	f, err := os.Create(filepath.Join(tql.destpkgname, "unions.gen.go"))
+	must(err)
+	defer f.Close()
+	err = genunions.Render(f)
+	must(err)
+}
+
+func (tql *twirpql) getField(pf pgs.Field, isType bool) *serviceField {
+	var f serviceField
+	f.Name = pf.Name().String()
+	pt := pf.Type().ProtoType().Proto()
+	var tmp string
+	switch pt {
+	case 11:
+		if pf.Type().IsMap() {
+			tql.setMap(f.Name, pf)
+			tmp = strings.Title(f.Name)
+		} else {
+			var msg pgs.Message
+			if pf.Type().IsRepeated() {
+				msg = pf.Type().Element().Embed()
+			} else {
+				msg = pf.Type().Embed()
+			}
+			if isType {
+				tmp = tql.getQualifiedName(msg)
+				tql.setType(msg)
+			} else {
+				tmp = tql.getInputName(msg)
+				tql.setInput(msg)
+			}
+		}
+	case 14:
+		tql.setEnum(pf.Type().Enum())
+		tmp = tql.getQualifiedName(pf.Type().Enum())
+	case 12:
+		tmp = strings.Title(f.Name)
+		tql.setBytes(tmp, pf)
+	default:
+		tmp = protoTypesToGqlTypes[pt.String()]
+		if tmp == "" {
+			panic("unsupported type: " + pt.String())
+		}
+	}
+	if pf.Type().IsRepeated() {
+		tmp = fmt.Sprintf("[%v]", tmp)
+	}
+	f.Type = tmp
+	return &f
 }
 
 // formatQueryInput returns a template-formatted representation
@@ -551,7 +633,7 @@ var protoTypesToGqlTypes = map[string]string{
 	"TYPE_STRING":  "String",
 	// "TYPE_GROUP": "",
 	// "TYPE_MESSAGE": "", // must be mapped to its sibling type
-	// "TYPE_BYTES":  "", // TODO: look into making it a string and not Scalar
+	// "TYPE_BYTES":  "",
 	"TYPE_UINT32": "Int",
 	// "TYPE_ENUM": "", // mapped to its sibling type
 	// "TYPE_SFIXED32": "",

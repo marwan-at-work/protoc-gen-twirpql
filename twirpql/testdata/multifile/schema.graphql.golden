@@ -3,8 +3,8 @@ schema {
 }
 
 type Query {
-	Hello: HelloResp!
-	Second(req: Second_SecondReq): Second_SecondResp!
+	hello: HelloResp!
+	second(req: Second_SecondReq): Second_SecondResp!
 }
 
 type HelloResp {

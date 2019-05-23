@@ -3,8 +3,8 @@ schema {
 }
 
 type Query {
-	Hello(req: HelloReq): HelloResp!
-	Bye(req: ByeReq): ByeResp!
+	hello(req: HelloReq): HelloResp!
+	bye(req: ByeReq): ByeResp!
 }
 
 type ByeResp {

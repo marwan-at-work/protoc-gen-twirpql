@@ -8,6 +8,21 @@ resolver:
   filename: twirpql/resolver.go
   type: Resolver
 models:
+  BreadReq:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.BreadReq
+  BreadResp:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.BreadResp
+  BreadRespAnswer:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e/twirpql.unionMask
+  BreadRespAnswerName:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.BreadResp_Name
+  BreadRespAnswerToasted:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.BreadResp_Toasted
   HelloReq:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.HelloReq

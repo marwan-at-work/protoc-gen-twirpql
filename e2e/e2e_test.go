@@ -23,14 +23,14 @@ func TestHello(t *testing.T) {
 				"name": "twirpql"
 			}
 		},
-		"query": "query q($req: HelloReq) {\n  Hello(req: $req) {\n    text  }\n}\n"
+		"query": "query q($req: HelloReq) {\n  hello(req: $req) {\n    text  }\n}\n"
 	}`))
 	req.Header.Add("Content-Type", "application/json")
 	h.ServeHTTP(w, req)
 
 	require.Equal(t, "twirpql", s.helloReq.GetName(), "Expected GraphQL request to populate Twirp Object")
 
-	expected := `{"data":{"Hello":{"text":"hello"}}}`
+	expected := `{"data":{"hello":{"text":"hello"}}}`
 
 	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
 }
@@ -46,14 +46,14 @@ func TestTrafficJam(t *testing.T) {
 				"color": "GREEN"
 			}
 		},
-		"query": "query q($req: TrafficJamReq) {\n  TrafficJam(req: $req) {\n next }\n}\n"
+		"query": "query q($req: TrafficJamReq) {\n  trafficJam(req: $req) {\n next }\n}\n"
 	}`))
 	req.Header.Add("Content-Type", "application/json")
 	h.ServeHTTP(w, req)
 
 	require.Equal(t, e2e.TrafficLight_GREEN, s.trafficJamReq.GetColor(), "Expected GraphQL request to populate Twirp Object")
 
-	expected := `{"data":{"TrafficJam":{"next":"YELLOW"}}}`
+	expected := `{"data":{"trafficJam":{"next":"YELLOW"}}}`
 
 	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
 }
@@ -68,12 +68,12 @@ func TestPainters(t *testing.T) {
 	req := httptest.NewRequest("POST", "/", strings.NewReader(`{
 		"operationName": "q",
 		"variables": {},
-		"query": "query q {\n  GetPainters {\n bestPainter {\n name }\n allPainters }\n}\n"
+		"query": "query q {\n  getPainters {\n bestPainter {\n name }\n allPainters }\n}\n"
 	}`))
 	req.Header.Add("Content-Type", "application/json")
 	h.ServeHTTP(w, req)
 
-	expected := `{"data":{"GetPainters":{"bestPainter":{"name":"picasso"},"allPainters":["one","two"]}}}`
+	expected := `{"data":{"getPainters":{"bestPainter":{"name":"picasso"},"allPainters":["one","two"]}}}`
 
 	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
 }
@@ -95,16 +95,40 @@ func TestTranslate(t *testing.T) {
 				"words": "{\"english\": {\"word\": \"hello\"}}"
 			}
 		},
-		"query": "query q($req: TranslateReq) {\n  Translate(req: $req) {\n translations }\n}\n"
+		"query": "query q($req: TranslateReq) {\n  translate(req: $req) {\n translations }\n}\n"
 	}`))
 	req.Header.Add("Content-Type", "application/json")
 	h.ServeHTTP(w, req)
 
 	require.Equal(t, s.translateReq.GetWords(), map[string]*e2e.Word{"english": {Word: "hello"}})
 
-	expected := `{"data":{"Translate":{"translations":{"english":{"word":"hello"}}}}}`
+	expected := `{"data":{"translate":{"translations":{"english":{"word":"hello"}}}}}`
 
 	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
+}
+
+func TestBread(t *testing.T) {
+	s := &service{breadResp: &e2e.BreadResp{
+		Answer: &e2e.BreadResp_Toasted{Toasted: true},
+	}}
+	h := twirpql.Handler(s, nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/", strings.NewReader(`{
+		"operationName": "q",
+		"variables": {
+			"req": {
+				"count": 3
+			}
+		},
+		"query": "query q($req: BreadReq) {\n  bread(req: $req) {\n answer\n {\n __typename } \n }\n}\n"
+	}`))
+	req.Header.Add("Content-Type", "application/json")
+	h.ServeHTTP(w, req)
+
+	expected := `{"data":{"bread":{"answer":{"__typename":"BreadRespAnswerToasted"}}}}`
+	require.Equal(t, expected, w.Body.String(), "Expected GraphQL query to return valid json")
+
+	require.Equal(t, s.breadReq.GetCount(), int64(3))
 }
 
 type service struct {
@@ -117,6 +141,8 @@ type service struct {
 	paintersResp   *e2e.PaintersResp
 	translateReq   *e2e.TranslateReq
 	translateResp  *e2e.TranslateResp
+	breadReq       *e2e.BreadReq
+	breadResp      *e2e.BreadResp
 	err            error
 }
 
@@ -138,4 +164,9 @@ func (s *service) GetPainters(ctx context.Context, req *e2e.PaintersReq) (*e2e.P
 func (s *service) Translate(ctx context.Context, req *e2e.TranslateReq) (*e2e.TranslateResp, error) {
 	s.translateReq = req
 	return s.translateResp, s.err
+}
+
+func (s *service) Bread(ctx context.Context, req *e2e.BreadReq) (*e2e.BreadResp, error) {
+	s.breadReq = req
+	return s.breadResp, s.err
 }

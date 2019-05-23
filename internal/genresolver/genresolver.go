@@ -9,12 +9,19 @@ import (
 	"github.com/99designs/gqlgen/plugin"
 )
 
-func New(serviceName, pkgName string, emptys []string, scalars map[string]string) plugin.Plugin {
+func New(
+	serviceName,
+	pkgName string,
+	emptys []string,
+	scalars map[string]string,
+	unions map[string]bool,
+) plugin.Plugin {
 	return &Plugin{
 		ServiceName: serviceName,
 		PackageName: pkgName,
 		Emptys:      emptys,
 		Scalars:     scalars,
+		Unions:      unions,
 	}
 }
 
@@ -23,6 +30,7 @@ type Plugin struct {
 	PackageName string
 	Emptys      []string
 	Scalars     map[string]string
+	Unions      map[string]bool
 }
 
 func (m *Plugin) isEmpty(f *codegen.Field) bool {
@@ -67,6 +75,10 @@ func (m *Plugin) GenerateCode(data *codegen.Data) error {
 			},
 			"isScalar": func(s string) bool {
 				_, ok := m.Scalars[s]
+				return ok
+			},
+			"isUnion": func(s string) bool {
+				_, ok := m.Unions[s]
 				return ok
 			},
 		},

@@ -48,6 +48,8 @@ type {{.ResolverType}} struct {
 				return {{getType $field}}{}, nil
 				{{ else if (isScalar ($field.GoFieldName)) }}
 					return obj.Get{{$field.GoFieldName}}(), nil
+				{{ else if (isUnion ($field.GoFieldName)) }}
+					return obj.Get{{$field.GoFieldName}}(), nil
 				{{- else -}}
 				return r.{{$serviceName}}.{{$field.GoFieldName}}(ctx, {{$reqArg}})
 				{{ end -}}

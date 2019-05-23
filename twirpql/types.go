@@ -1,11 +1,14 @@
 package twirpql
 
+import pgs "github.com/lyft/protoc-gen-star"
+
 type file struct {
 	Service *service // TODO: multiple services
 	Types   []*serviceType
 	Inputs  []*serviceType
 	Enums   []*enums
 	Scalars []string
+	Unions  []*union // TODO:
 }
 
 type service struct {
@@ -30,4 +33,16 @@ type serviceField struct {
 type method struct {
 	Name, Request, Response string
 	FormattedRequest        string
+}
+
+type union struct {
+	Name  string
+	Types []string
+	oneof pgs.OneOf
+}
+
+type oneOf struct {
+	Name   string
+	Type   string
+	Fields []*serviceField
 }

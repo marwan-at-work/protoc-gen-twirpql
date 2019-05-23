@@ -3,7 +3,7 @@ schema {
 }
 
 type Query {
-	Hello(req: HelloMsgInput): HelloMsg!
+	hello(req: HelloMsgInput): HelloMsg!
 }
 
 type HelloMsg {

@@ -9,6 +9,7 @@ service Service {
   rpc TrafficJam(TrafficJamReq) returns (TrafficJamResp);
   rpc GetPainters(PaintersReq) returns (PaintersResp);
   rpc Translate(TranslateReq) returns (TranslateResp);
+  rpc Bread(BreadReq) returns (BreadResp);
 }
 
 message HelloReq {
@@ -53,4 +54,15 @@ message Word {
 
 message TranslateReq {
   map<string, Word> words = 1; 
+}
+
+message BreadReq {
+  int64 count = 1;
+}
+
+message BreadResp {
+  oneof answer {
+    string name = 1;
+    bool toasted = 2;
+  }
 }

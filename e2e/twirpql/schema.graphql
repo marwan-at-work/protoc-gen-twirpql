@@ -3,10 +3,23 @@ schema {
 }
 
 type Query {
-	Hello(req: HelloReq): HelloResp!
-	TrafficJam(req: TrafficJamReq): TrafficJamResp!
-	GetPainters: PaintersResp!
-	Translate(req: TranslateReq): TranslateResp!
+	hello(req: HelloReq): HelloResp!
+	trafficJam(req: TrafficJamReq): TrafficJamResp!
+	getPainters: PaintersResp!
+	translate(req: TranslateReq): TranslateResp!
+	bread(req: BreadReq): BreadResp!
+}
+
+type BreadResp {
+	answer: BreadRespAnswer!
+}
+
+type BreadRespAnswerName {
+	name: String!
+}
+
+type BreadRespAnswerToasted {
+	toasted: Boolean!
 }
 
 type HelloResp {
@@ -30,6 +43,10 @@ type TranslateResp {
 	translations: Translations!
 }
 
+input BreadReq {
+	count: Int!
+}
+
 input HelloReq {
 	name: String!
 }
@@ -51,3 +68,5 @@ enum TrafficLight {
 scalar Translations
 
 scalar Words
+
+union BreadRespAnswer = BreadRespAnswerName | BreadRespAnswerToasted
