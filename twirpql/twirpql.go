@@ -421,11 +421,12 @@ func (tql *twirpql) getUnionName(field pgs.OneOf) string {
 // but if it's part of an import like "google.protobuf.Timestamp" then we combine the package name
 // with the Message namd to ensure we have no clashes so it becomes: "google_protobuf_Timestamp"
 func (tql *twirpql) getQualifiedName(msg pgs.Entity) string {
+	msgGoTypeName := tql.ctx.Name(msg).String()
 	if msg.Package() == tql.protopkg {
-		return msg.Name().String()
+		return msgGoTypeName
 	}
 	pkgName := strings.ReplaceAll(msg.Package().ProtoName().String(), ".", "_")
-	return strings.Title(pkgName + "_" + msg.Name().String())
+	return strings.Title(pkgName + "_" + msgGoTypeName)
 }
 
 func (tql *twirpql) setInput(msg pgs.Message) {
@@ -461,9 +462,10 @@ func (tql *twirpql) setGraphQLType(name string, msg pgs.Message) {
 		tql.emptys[name] = true
 		return
 	}
+	msgName := tql.ctx.Name(msg).String()
 	importpath := tql.deduceImportPath(msg)
 	tql.gqlTypes[name] = gqlconfig.TypeMapEntry{
-		Model: gqlconfig.StringList{importpath + "." + msg.Name().String()},
+		Model: gqlconfig.StringList{importpath + "." + msgName},
 	}
 }
 
@@ -512,8 +514,9 @@ func (tql *twirpql) setEnum(protoEnum pgs.Enum) {
 
 func (tql *twirpql) setGraphQLEnum(name string, enum pgs.Enum) {
 	importpath := tql.deduceImportPath(enum)
+	enumGoTypeName := tql.ctx.Name(enum).String()
 	tql.gqlTypes[name] = gqlconfig.TypeMapEntry{
-		Model: gqlconfig.StringList{importpath + "." + enum.Name().String()},
+		Model: gqlconfig.StringList{importpath + "." + enumGoTypeName},
 	}
 }
 
