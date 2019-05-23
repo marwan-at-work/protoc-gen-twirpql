@@ -165,6 +165,9 @@ func (tql *twirpql) Execute(targets map[string]pgs.File, pkgs map[string]pgs.Pac
 	}
 
 	for fileName, targetFile := range targets {
+		if targetFile.Syntax() != pgs.Proto3 {
+			panic("only proto3 is supported")
+		}
 		tql.svc = tql.pickServiceFromFile(tql.Parameters().Str("service"), targetFile)
 		tql.protopkg = targetFile.Package()
 		serviceDir := filepath.Dir(fileName)
