@@ -507,7 +507,7 @@ func (tql *twirpql) setEnum(protoEnum pgs.Enum) {
 		vals = append(vals, v.Name().String())
 	}
 	tql.enums[name] = &enumData{
-		Name:        protoEnum.Name().String(),
+		Name:        tql.ctx.Name(protoEnum).String(),
 		ImportPath:  tql.deduceImportPath(protoEnum),
 		PackageName: tql.ctx.PackageName(protoEnum.File()).String(),
 		Values:      vals,
