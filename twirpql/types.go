@@ -1,7 +1,5 @@
 package twirpql
 
-import pgs "github.com/lyft/protoc-gen-star"
-
 type file struct {
 	Service *service // TODO: multiple services
 	Types   []*serviceType
@@ -38,7 +36,6 @@ type method struct {
 type union struct {
 	Name  string
 	Types []string
-	oneof pgs.OneOf
 }
 
 type oneOf struct {

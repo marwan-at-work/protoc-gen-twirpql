@@ -544,7 +544,15 @@ func (tql *twirpql) setMap(fieldName string, f pgs.Field) {
 		)
 		tql.maps[upField] = goTypeDeclaration
 	case 14:
-		panic("maps to enum values are not yet supported")
+		mapValue := f.Type().Element().Enum()
+		tql.mapImports[tql.deduceImportPath(mapValue)] = struct{}{}
+		goTypeDeclaration := strings.ReplaceAll(
+			tql.ctx.Type(f).Value().String(),
+			mapValue.Name().String(),
+			tql.ctx.PackageName(mapValue).String()+"."+
+				mapValue.Name().String(),
+		)
+		tql.maps[upField] = goTypeDeclaration
 	default:
 		tql.maps[upField] = tql.ctx.Type(f).Value().String()
 	}
