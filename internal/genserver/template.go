@@ -16,16 +16,17 @@ func Playground(title, endpoint string) http.Handler {
 // Handler returns a handler to the GraphQL API. 
 // Server Hooks are optional but if present, they will
 // be injected as GraphQL middleware.
-func Handler(service {{lookupImport .ModPath}}.{{.ServiceName}}, hooks *twirp.ServerHooks) http.Handler {
+func Handler(service {{lookupImport .ModPath}}.{{.ServiceName}}, hooks *twirp.ServerHooks, opts ...handler.Option) http.Handler {
 	if hooks == nil {
-		return handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{service}}))
+		return handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{service}}), opts...)
 	}
 	h := &middlewareHooks{hooks}
+	opts = append([]handler.Option{handler.ResolverMiddleware(h.withErr)}, opts...)
 	return handler.GraphQL(
 		NewExecutableSchema(
 			Config{Resolvers: &Resolver{service}},
 		),
-		handler.ResolverMiddleware(h.withErr),
+		opts...
 	)
 }
 
