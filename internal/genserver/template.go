@@ -3,8 +3,10 @@ package genserver
 var tmpl = `{{ reserveImport "context" }}
 {{ reserveImport "fmt" }}
 {{ reserveImport "net/http" }}
+{{ reserveImport "strings" }}
 {{ reserveImport "github.com/99designs/gqlgen/handler" }}
 {{ reserveImport "github.com/twitchtv/twirp" }}
+{{ reserveImport "github.com/twitchtv/twirp/ctxsetters" }}
 {{ reserveImport "github.com/99designs/gqlgen/graphql" }}
 
 // Playground is a proxy to github.com/99designs/gqlgen/handler.Playground
@@ -21,7 +23,7 @@ func Handler(service {{lookupImport .ModPath}}.{{.ServiceName}}, hooks *twirp.Se
 		return handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{service}}), opts...)
 	}
 	h := &middlewareHooks{hooks}
-	opts = append([]handler.Option{handler.ResolverMiddleware(h.withErr)}, opts...)
+	opts = append([]handler.Option{handler.ResolverMiddleware(h.hook)}, opts...)
 	return handler.GraphQL(
 		NewExecutableSchema(
 			Config{Resolvers: &Resolver{service}},
@@ -34,7 +36,20 @@ type middlewareHooks struct {
 	hooks *twirp.ServerHooks
 }
 
-func (h *middlewareHooks) withErr(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
+func (h *middlewareHooks) hook(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
+	ifc := graphql.GetResolverContext(ctx).Path()
+	if len(ifc) > 0 {
+		queryName, ok := ifc[0].(string)
+		if ok {
+			ctx = ctxsetters.WithMethodName(ctx, strings.Title(queryName))
+		}
+	}
+	if h.hooks.RequestRouted != nil {
+		ctx, err = h.hooks.RequestRouted(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	res, err = next(ctx)
 	if err != nil && h.hooks.Error != nil {
 		terr, ok := err.(twirp.Error)
