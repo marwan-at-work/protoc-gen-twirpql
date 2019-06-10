@@ -11,13 +11,23 @@ var schemaFuncs = template.FuncMap{
 	},
 }
 
-const schemaTemplate = `schema {
-    query: Query
-}
+const schemaTemplate = `
+{{ if (gt (len .Service.Methods) 0) }}
 
 type Query { {{range .Service.Methods}}
     {{.Name}}{{.Request}}: {{.Response}}!{{end}}
 }
+
+{{ end }}
+
+{{ if (gt (len .Service.Mutations) 0) }}
+
+type Mutation { {{range .Service.Mutations}}
+    {{.Name}}{{.Request}}: {{.Response}}!{{end}}
+}
+
+{{ end }}
+
 {{range .Types}}
 type {{.Name}} { {{- range .Fields}}
     {{.Name}}: {{.Type}}!{{end}}

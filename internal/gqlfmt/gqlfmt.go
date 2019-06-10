@@ -41,6 +41,7 @@ func (f *formatter) print() {
 	f.sortDeclarations()
 	f.printHeader()
 	f.printQuery()
+	f.printMutation()
 	f.printTypes()
 	f.printInputs()
 	f.printEnums()
@@ -50,8 +51,7 @@ func (f *formatter) print() {
 
 func (f *formatter) sortDeclarations() {
 	for k, def := range f.schema.Types {
-		// TODO: maybe include query and refactor above.
-		if k == "Query" || def.BuiltIn {
+		if k == "Query" || k == "Mutation" || def.BuiltIn {
 			continue
 		}
 		switch def.Kind {
@@ -76,16 +76,40 @@ func (f *formatter) sortDeclarations() {
 }
 
 func (f *formatter) printHeader() {
-	f.out.Write([]byte(`schema {
-	query: Query
-}
-
-`))
+	f.out.Write([]byte(`schema {`))
+	if f.schema.Query != nil && len(f.schema.Query.Fields) > 0 {
+		f.out.Write([]byte("\n\tquery: Query"))
+	}
+	if f.schema.Mutation != nil && len(f.schema.Mutation.Fields) > 0 {
+		f.out.Write([]byte("\n\tmutation: Mutation"))
+	}
+	f.out.Write([]byte{'\n', '}', '\n', '\n'})
 }
 
 func (f *formatter) printQuery() {
 	f.out.Write([]byte("type Query {\n"))
 	for _, field := range f.schema.Query.Fields {
+		if strings.HasPrefix(field.Name, "__") {
+			continue
+		}
+		f.out.Write([]byte{'\t'})
+		f.out.Write([]byte(field.Name))
+		if len(field.Arguments) != 0 {
+			f.out.Write([]byte("(req: " + field.Arguments[0].Type.Name() + ")"))
+		}
+		f.out.Write([]byte(": "))
+		f.out.Write([]byte(field.Type.Name()))
+		f.out.Write([]byte{'!', '\n'})
+	}
+	f.out.Write([]byte{'}', '\n'})
+}
+
+func (f *formatter) printMutation() {
+	if f.schema.Mutation == nil || len(f.schema.Mutation.Fields) == 0 {
+		return
+	}
+	f.out.Write([]byte("\ntype Mutation {\n"))
+	for _, field := range f.schema.Mutation.Fields {
 		if strings.HasPrefix(field.Name, "__") {
 			continue
 		}

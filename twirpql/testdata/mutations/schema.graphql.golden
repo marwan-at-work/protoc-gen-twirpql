@@ -1,0 +1,22 @@
+schema {
+	query: Query
+	mutation: Mutation
+}
+
+type Query {
+	hello(req: HelloMsgInput): HelloMsg!
+}
+
+type Mutation {
+	goodbye(req: HelloMsgInput): HelloMsg!
+}
+
+type HelloMsg {
+	text: String!
+	OK: Boolean!
+}
+
+input HelloMsgInput {
+	text: String!
+	OK: Boolean!
+}

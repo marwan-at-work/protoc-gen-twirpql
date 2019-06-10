@@ -10,7 +10,8 @@ type file struct {
 }
 
 type service struct {
-	Methods []*method
+	Methods   []*method
+	Mutations []*method
 }
 
 type enums struct {
@@ -30,7 +31,6 @@ type serviceField struct {
 
 type method struct {
 	Name, Request, Response string
-	FormattedRequest        string
 }
 
 type union struct {

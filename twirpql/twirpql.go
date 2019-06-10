@@ -13,6 +13,7 @@ import (
 	"github.com/99designs/gqlgen/api"
 	gqlconfig "github.com/99designs/gqlgen/codegen/config"
 	"github.com/99designs/gqlgen/plugin/modelgen"
+	"github.com/golang/protobuf/proto"
 	pgs "github.com/lyft/protoc-gen-star"
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
 	"gopkg.in/yaml.v2"
@@ -169,6 +170,9 @@ func (tql *twirpql) Execute(targets map[string]pgs.File, pkgs map[string]pgs.Pac
 			panic("only proto3 is supported")
 		}
 		tql.svc = tql.pickServiceFromFile(tql.Parameters().Str("service"), targetFile)
+		if len(tql.svc.Methods()) == 0 {
+			panic("service must have at least on rpc")
+		}
 		tql.protopkg = targetFile.Package()
 		serviceDir := filepath.Dir(fileName)
 		tql.setImportPath(serviceDir)
@@ -326,12 +330,13 @@ func (tql *twirpql) initGql(svcName string) {
 
 func (tql *twirpql) getService(svc pgs.Service) *service {
 	var s service
-	s.Methods = tql.getMethods(svc.Methods())
+	s.Methods, s.Mutations = tql.getMethods(svc.Methods())
 	return &s
 }
 
-func (tql *twirpql) getMethods(protoMethods []pgs.Method) []*method {
+func (tql *twirpql) getMethods(protoMethods []pgs.Method) ([]*method, []*method) {
 	methods := []*method{}
+	mutations := []*method{}
 
 	// collect all types first, so that we de-dupe mixed
 	// inputs && types
@@ -349,9 +354,27 @@ func (tql *twirpql) getMethods(protoMethods []pgs.Method) []*method {
 			m.Request = tql.formatQueryInput(pm.Input())
 		}
 		m.Response = tql.getQualifiedName(pm.Output())
-		methods = append(methods, &m)
+		if tql.isMutation(pm) {
+			mutations = append(mutations, &m)
+		} else {
+			methods = append(methods, &m)
+		}
 	}
-	return methods
+	return methods, mutations
+}
+
+func (tql *twirpql) isMutation(pm pgs.Method) bool {
+	opts := pm.Descriptor().GetOptions()
+	if proto.HasExtension(opts, E_Modifiers) {
+		mut, err := proto.GetExtension(opts, E_Modifiers)
+		must(err)
+		val, ok := mut.(*Modifiers)
+		if !ok {
+			panic(fmt.Sprintf("invalid mutation type: %T\n", mut))
+		}
+		return val.GetMutation()
+	}
+	return false
 }
 
 func (tql *twirpql) setType(msg pgs.Message) {

@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/handler"
 	"github.com/twitchtv/twirp"
+	"github.com/twitchtv/twirp/ctxsetters"
 	"marwan.io/protoc-gen-twirpql/e2e"
 )
 
@@ -20,16 +22,17 @@ func Playground(title, endpoint string) http.Handler {
 // Handler returns a handler to the GraphQL API.
 // Server Hooks are optional but if present, they will
 // be injected as GraphQL middleware.
-func Handler(service e2e.Service, hooks *twirp.ServerHooks) http.Handler {
+func Handler(service e2e.Service, hooks *twirp.ServerHooks, opts ...handler.Option) http.Handler {
 	if hooks == nil {
-		return handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{service}}))
+		return handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{service}}), opts...)
 	}
 	h := &middlewareHooks{hooks}
+	opts = append([]handler.Option{handler.ResolverMiddleware(h.hook)}, opts...)
 	return handler.GraphQL(
 		NewExecutableSchema(
 			Config{Resolvers: &Resolver{service}},
 		),
-		handler.ResolverMiddleware(h.withErr),
+		opts...,
 	)
 }
 
@@ -37,7 +40,20 @@ type middlewareHooks struct {
 	hooks *twirp.ServerHooks
 }
 
-func (h *middlewareHooks) withErr(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
+func (h *middlewareHooks) hook(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
+	ifc := graphql.GetResolverContext(ctx).Path()
+	if len(ifc) > 0 {
+		queryName, ok := ifc[0].(string)
+		if ok {
+			ctx = ctxsetters.WithMethodName(ctx, strings.Title(queryName))
+		}
+	}
+	if h.hooks.RequestRouted != nil {
+		ctx, err = h.hooks.RequestRouted(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 	res, err = next(ctx)
 	if err != nil && h.hooks.Error != nil {
 		terr, ok := err.(twirp.Error)
