@@ -15,6 +15,12 @@ type Resolver struct {
 func (r *Resolver) BreadResp() BreadRespResolver {
 	return &breadRespResolver{r}
 }
+func (r *Resolver) ChangeMeResp() ChangeMeRespResolver {
+	return &changeMeRespResolver{r}
+}
+func (r *Resolver) Mutation() MutationResolver {
+	return &mutationResolver{r}
+}
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
@@ -26,6 +32,22 @@ type breadRespResolver struct{ *Resolver }
 
 func (r *breadRespResolver) Answer(ctx context.Context, obj *e2e.BreadResp) (unionMask, error) {
 	return obj.GetAnswer(), nil
+}
+
+type changeMeRespResolver struct{ *Resolver }
+
+func (r *changeMeRespResolver) Previous(ctx context.Context, obj *e2e.ChangeMeResp) (Previous, error) {
+	return obj.GetPrevious(), nil
+}
+
+func (r *changeMeRespResolver) Answer(ctx context.Context, obj *e2e.ChangeMeResp) (unionMask, error) {
+	return obj.GetAnswer(), nil
+}
+
+type mutationResolver struct{ *Resolver }
+
+func (r *mutationResolver) ChangeMe(ctx context.Context, req *e2e.ChangeMeReq) (*e2e.ChangeMeResp, error) {
+	return r.Service.ChangeMe(ctx, req)
 }
 
 type queryResolver struct{ *Resolver }

@@ -1,5 +1,6 @@
 schema {
 	query: Query
+	mutation: Mutation
 }
 
 type Query {
@@ -8,6 +9,10 @@ type Query {
 	getPainters: PaintersResp!
 	translate(req: TranslateReq): TranslateResp!
 	bread(req: BreadReq): BreadResp!
+}
+
+type Mutation {
+	changeMe(req: ChangeMeReq): ChangeMeResp!
 }
 
 type BreadResp {
@@ -20,6 +25,20 @@ type BreadRespAnswerName {
 
 type BreadRespAnswerToasted {
 	toasted: Boolean!
+}
+
+type ChangeMeResp {
+	name: String!
+	previous: Previous!
+	answer: ChangeMeRespAnswer!
+}
+
+type ChangeMeRespAnswerChanged {
+	changed: Boolean!
+}
+
+type ChangeMeRespAnswerNewName {
+	newName: String!
 }
 
 type HelloResp {
@@ -47,6 +66,11 @@ input BreadReq {
 	count: Int!
 }
 
+input ChangeMeReq {
+	name: String!
+	previous: Previous!
+}
+
 input HelloReq {
 	name: String!
 }
@@ -65,8 +89,12 @@ enum TrafficLight {
 	GREEN
 }
 
+scalar Previous
+
 scalar Translations
 
 scalar Words
 
 union BreadRespAnswer = BreadRespAnswerName | BreadRespAnswerToasted
+
+union ChangeMeRespAnswer = ChangeMeRespAnswerChanged | ChangeMeRespAnswerNewName

@@ -7,6 +7,20 @@ import (
 	"marwan.io/protoc-gen-twirpql/e2e"
 )
 
+type Previous map[string]*e2e.ChangeMeResp
+
+func (scalar *Previous) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return nil
+	}
+	return json.Unmarshal([]byte(str), scalar)
+}
+
+func (scalar Previous) MarshalGQL(w io.Writer) {
+	json.NewEncoder(w).Encode(scalar)
+}
+
 type Translations map[string]*e2e.Word
 
 func (scalar *Translations) UnmarshalGQL(v interface{}) error {

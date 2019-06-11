@@ -38,6 +38,8 @@ type Config struct {
 
 type ResolverRoot interface {
 	BreadResp() BreadRespResolver
+	ChangeMeResp() ChangeMeRespResolver
+	Mutation() MutationResolver
 	Query() QueryResolver
 	TranslateResp() TranslateRespResolver
 }
@@ -58,8 +60,26 @@ type ComplexityRoot struct {
 		Toasted func(childComplexity int) int
 	}
 
+	ChangeMeResp struct {
+		Answer   func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Previous func(childComplexity int) int
+	}
+
+	ChangeMeRespAnswerChanged struct {
+		Changed func(childComplexity int) int
+	}
+
+	ChangeMeRespAnswerNewName struct {
+		NewName func(childComplexity int) int
+	}
+
 	HelloResp struct {
 		Text func(childComplexity int) int
+	}
+
+	Mutation struct {
+		ChangeMe func(childComplexity int, req *e2e.ChangeMeReq) int
 	}
 
 	PaintersResp struct {
@@ -90,6 +110,13 @@ type ComplexityRoot struct {
 
 type BreadRespResolver interface {
 	Answer(ctx context.Context, obj *e2e.BreadResp) (unionMask, error)
+}
+type ChangeMeRespResolver interface {
+	Previous(ctx context.Context, obj *e2e.ChangeMeResp) (Previous, error)
+	Answer(ctx context.Context, obj *e2e.ChangeMeResp) (unionMask, error)
+}
+type MutationResolver interface {
+	ChangeMe(ctx context.Context, req *e2e.ChangeMeReq) (*e2e.ChangeMeResp, error)
 }
 type QueryResolver interface {
 	Hello(ctx context.Context, req *e2e.HelloReq) (*e2e.HelloResp, error)
@@ -138,12 +165,59 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.BreadRespAnswerToasted.Toasted(childComplexity), true
 
+	case "ChangeMeResp.answer":
+		if e.complexity.ChangeMeResp.Answer == nil {
+			break
+		}
+
+		return e.complexity.ChangeMeResp.Answer(childComplexity), true
+
+	case "ChangeMeResp.name":
+		if e.complexity.ChangeMeResp.Name == nil {
+			break
+		}
+
+		return e.complexity.ChangeMeResp.Name(childComplexity), true
+
+	case "ChangeMeResp.previous":
+		if e.complexity.ChangeMeResp.Previous == nil {
+			break
+		}
+
+		return e.complexity.ChangeMeResp.Previous(childComplexity), true
+
+	case "ChangeMeRespAnswerChanged.changed":
+		if e.complexity.ChangeMeRespAnswerChanged.Changed == nil {
+			break
+		}
+
+		return e.complexity.ChangeMeRespAnswerChanged.Changed(childComplexity), true
+
+	case "ChangeMeRespAnswerNewName.newName":
+		if e.complexity.ChangeMeRespAnswerNewName.NewName == nil {
+			break
+		}
+
+		return e.complexity.ChangeMeRespAnswerNewName.NewName(childComplexity), true
+
 	case "HelloResp.text":
 		if e.complexity.HelloResp.Text == nil {
 			break
 		}
 
 		return e.complexity.HelloResp.Text(childComplexity), true
+
+	case "Mutation.changeMe":
+		if e.complexity.Mutation.ChangeMe == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_changeMe_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ChangeMe(childComplexity, args["req"].(*e2e.ChangeMeReq)), true
 
 	case "PaintersResp.allPainters":
 		if e.complexity.PaintersResp.AllPainters == nil {
@@ -257,7 +331,20 @@ func (e *executableSchema) Query(ctx context.Context, op *ast.OperationDefinitio
 }
 
 func (e *executableSchema) Mutation(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
-	return graphql.ErrorResponse(ctx, "mutations are not supported")
+	ec := executionContext{graphql.GetRequestContext(ctx), e}
+
+	buf := ec.RequestMiddleware(ctx, func(ctx context.Context) []byte {
+		data := ec._Mutation(ctx, op.SelectionSet)
+		var buf bytes.Buffer
+		data.MarshalGQL(&buf)
+		return buf.Bytes()
+	})
+
+	return &graphql.Response{
+		Data:       buf,
+		Errors:     ec.Errors,
+		Extensions: ec.Extensions,
+	}
 }
 
 func (e *executableSchema) Subscription(ctx context.Context, op *ast.OperationDefinition) func() *graphql.Response {
@@ -301,6 +388,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "twirpql/schema.graphql", Input: `schema {
 	query: Query
+	mutation: Mutation
 }
 
 type Query {
@@ -309,6 +397,10 @@ type Query {
 	getPainters: PaintersResp!
 	translate(req: TranslateReq): TranslateResp!
 	bread(req: BreadReq): BreadResp!
+}
+
+type Mutation {
+	changeMe(req: ChangeMeReq): ChangeMeResp!
 }
 
 type BreadResp {
@@ -321,6 +413,20 @@ type BreadRespAnswerName {
 
 type BreadRespAnswerToasted {
 	toasted: Boolean!
+}
+
+type ChangeMeResp {
+	name: String!
+	previous: Previous!
+	answer: ChangeMeRespAnswer!
+}
+
+type ChangeMeRespAnswerChanged {
+	changed: Boolean!
+}
+
+type ChangeMeRespAnswerNewName {
+	newName: String!
 }
 
 type HelloResp {
@@ -348,6 +454,11 @@ input BreadReq {
 	count: Int!
 }
 
+input ChangeMeReq {
+	name: String!
+	previous: Previous!
+}
+
 input HelloReq {
 	name: String!
 }
@@ -366,17 +477,35 @@ enum TrafficLight {
 	GREEN
 }
 
+scalar Previous
+
 scalar Translations
 
 scalar Words
 
 union BreadRespAnswer = BreadRespAnswerName | BreadRespAnswerToasted
+
+union ChangeMeRespAnswer = ChangeMeRespAnswerChanged | ChangeMeRespAnswerNewName
 `},
 )
 
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_changeMe_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *e2e.ChangeMeReq
+	if tmp, ok := rawArgs["req"]; ok {
+		arg0, err = ec.unmarshalOChangeMeReq2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐChangeMeReq(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["req"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -561,6 +690,141 @@ func (ec *executionContext) _BreadRespAnswerToasted_toasted(ctx context.Context,
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ChangeMeResp_name(ctx context.Context, field graphql.CollectedField, obj *e2e.ChangeMeResp) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "ChangeMeResp",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ChangeMeResp_previous(ctx context.Context, field graphql.CollectedField, obj *e2e.ChangeMeResp) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "ChangeMeResp",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ChangeMeResp().Previous(rctx, obj)
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(Previous)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNPrevious2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐPrevious(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ChangeMeResp_answer(ctx context.Context, field graphql.CollectedField, obj *e2e.ChangeMeResp) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "ChangeMeResp",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ChangeMeResp().Answer(rctx, obj)
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(unionMask)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNChangeMeRespAnswer2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐunionMask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ChangeMeRespAnswerChanged_changed(ctx context.Context, field graphql.CollectedField, obj *e2e.ChangeMeResp_Changed) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "ChangeMeRespAnswerChanged",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Changed, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ChangeMeRespAnswerNewName_newName(ctx context.Context, field graphql.CollectedField, obj *e2e.ChangeMeResp_NewName) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "ChangeMeRespAnswerNewName",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NewName, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _HelloResp_text(ctx context.Context, field graphql.CollectedField, obj *e2e.HelloResp) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
@@ -586,6 +850,40 @@ func (ec *executionContext) _HelloResp_text(ctx context.Context, field graphql.C
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_changeMe(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_changeMe_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ChangeMe(rctx, args["req"].(*e2e.ChangeMeReq))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*e2e.ChangeMeResp)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNChangeMeResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐChangeMeResp(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PaintersResp_bestPainter(ctx context.Context, field graphql.CollectedField, obj *e2e.PaintersResp) graphql.Marshaler {
@@ -1790,6 +2088,30 @@ func (ec *executionContext) unmarshalInputBreadReq(ctx context.Context, v interf
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputChangeMeReq(ctx context.Context, v interface{}) (e2e.ChangeMeReq, error) {
+	var it e2e.ChangeMeReq
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "previous":
+			var err error
+			it.Previous, err = ec.unmarshalNPrevious2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐPrevious(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputHelloReq(ctx context.Context, v interface{}) (e2e.HelloReq, error) {
 	var it e2e.HelloReq
 	var asMap = v.(map[string]interface{})
@@ -1860,6 +2182,23 @@ func (ec *executionContext) _BreadRespAnswer(ctx context.Context, sel ast.Select
 		return ec._BreadRespAnswerToasted(ctx, sel, &obj)
 	case *e2e.BreadResp_Toasted:
 		return ec._BreadRespAnswerToasted(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ChangeMeRespAnswer(ctx context.Context, sel ast.SelectionSet, obj *unionMask) graphql.Marshaler {
+	switch obj := (*obj).(type) {
+	case nil:
+		return graphql.Null
+	case e2e.ChangeMeResp_Changed:
+		return ec._ChangeMeRespAnswerChanged(ctx, sel, &obj)
+	case *e2e.ChangeMeResp_Changed:
+		return ec._ChangeMeRespAnswerChanged(ctx, sel, obj)
+	case e2e.ChangeMeResp_NewName:
+		return ec._ChangeMeRespAnswerNewName(ctx, sel, &obj)
+	case *e2e.ChangeMeResp_NewName:
+		return ec._ChangeMeRespAnswerNewName(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -1959,6 +2298,115 @@ func (ec *executionContext) _BreadRespAnswerToasted(ctx context.Context, sel ast
 	return out
 }
 
+var changeMeRespImplementors = []string{"ChangeMeResp"}
+
+func (ec *executionContext) _ChangeMeResp(ctx context.Context, sel ast.SelectionSet, obj *e2e.ChangeMeResp) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, changeMeRespImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChangeMeResp")
+		case "name":
+			out.Values[i] = ec._ChangeMeResp_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "previous":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ChangeMeResp_previous(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "answer":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ChangeMeResp_answer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var changeMeRespAnswerChangedImplementors = []string{"ChangeMeRespAnswerChanged", "ChangeMeRespAnswer"}
+
+func (ec *executionContext) _ChangeMeRespAnswerChanged(ctx context.Context, sel ast.SelectionSet, obj *e2e.ChangeMeResp_Changed) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, changeMeRespAnswerChangedImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChangeMeRespAnswerChanged")
+		case "changed":
+			out.Values[i] = ec._ChangeMeRespAnswerChanged_changed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var changeMeRespAnswerNewNameImplementors = []string{"ChangeMeRespAnswerNewName", "ChangeMeRespAnswer"}
+
+func (ec *executionContext) _ChangeMeRespAnswerNewName(ctx context.Context, sel ast.SelectionSet, obj *e2e.ChangeMeResp_NewName) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, changeMeRespAnswerNewNameImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChangeMeRespAnswerNewName")
+		case "newName":
+			out.Values[i] = ec._ChangeMeRespAnswerNewName_newName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var helloRespImplementors = []string{"HelloResp"}
 
 func (ec *executionContext) _HelloResp(ctx context.Context, sel ast.SelectionSet, obj *e2e.HelloResp) graphql.Marshaler {
@@ -1972,6 +2420,37 @@ func (ec *executionContext) _HelloResp(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = graphql.MarshalString("HelloResp")
 		case "text":
 			out.Values[i] = ec._HelloResp_text(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, mutationImplementors)
+
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "changeMe":
+			out.Values[i] = ec._Mutation_changeMe(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2485,6 +2964,24 @@ func (ec *executionContext) marshalNBreadRespAnswer2marwanᚗioᚋprotocᚑgen�
 	return ec._BreadRespAnswer(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNChangeMeResp2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐChangeMeResp(ctx context.Context, sel ast.SelectionSet, v e2e.ChangeMeResp) graphql.Marshaler {
+	return ec._ChangeMeResp(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNChangeMeResp2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐChangeMeResp(ctx context.Context, sel ast.SelectionSet, v *e2e.ChangeMeResp) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._ChangeMeResp(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNChangeMeRespAnswer2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐunionMask(ctx context.Context, sel ast.SelectionSet, v unionMask) graphql.Marshaler {
+	return ec._ChangeMeRespAnswer(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNHelloResp2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐHelloResp(ctx context.Context, sel ast.SelectionSet, v e2e.HelloResp) graphql.Marshaler {
 	return ec._HelloResp(ctx, sel, &v)
 }
@@ -2539,6 +3036,15 @@ func (ec *executionContext) marshalNPainters_Painter2ᚖmarwanᚗioᚋprotocᚑg
 		return graphql.Null
 	}
 	return ec._Painters_Painter(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNPrevious2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐPrevious(ctx context.Context, v interface{}) (Previous, error) {
+	var res Previous
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNPrevious2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚋtwirpqlᚐPrevious(ctx context.Context, sel ast.SelectionSet, v Previous) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -2896,6 +3402,18 @@ func (ec *executionContext) unmarshalOBreadReq2ᚖmarwanᚗioᚋprotocᚑgenᚑt
 		return nil, nil
 	}
 	res, err := ec.unmarshalOBreadReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐBreadReq(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) unmarshalOChangeMeReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐChangeMeReq(ctx context.Context, v interface{}) (e2e.ChangeMeReq, error) {
+	return ec.unmarshalInputChangeMeReq(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOChangeMeReq2ᚖmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐChangeMeReq(ctx context.Context, v interface{}) (*e2e.ChangeMeReq, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOChangeMeReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐChangeMeReq(ctx, v)
 	return &res, err
 }
 

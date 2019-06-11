@@ -3,6 +3,7 @@ package e2e;
 option go_package = "e2e";
 
 import "painters/painters.proto";
+import "twirpql.proto";
 
 service Service {
   rpc Hello(HelloReq) returns (HelloResp);
@@ -10,6 +11,11 @@ service Service {
   rpc GetPainters(PaintersReq) returns (PaintersResp);
   rpc Translate(TranslateReq) returns (TranslateResp);
   rpc Bread(BreadReq) returns (BreadResp);
+  rpc ChangeMe(ChangeMeReq) returns (ChangeMeResp) {
+    option (twirpql.modifiers) = {
+      mutation: true;
+    };
+  };
 }
 
 message HelloReq {
@@ -65,4 +71,18 @@ message BreadResp {
     string name = 1;
     bool toasted = 2;
   }
+}
+
+message ChangeMeReq {
+  string name = 1;
+  map<string, ChangeMeResp> previous = 2;
+}
+
+message ChangeMeResp {
+  string name = 1;
+  oneof answer {
+    string newName = 2;
+    bool changed = 3;
+  }
+  map<string, ChangeMeResp> previous = 4;
 }

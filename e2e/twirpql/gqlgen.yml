@@ -23,6 +23,21 @@ models:
   BreadRespAnswerToasted:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.BreadResp_Toasted
+  ChangeMeReq:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.ChangeMeReq
+  ChangeMeResp:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.ChangeMeResp
+  ChangeMeRespAnswer:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e/twirpql.unionMask
+  ChangeMeRespAnswerChanged:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.ChangeMeResp_Changed
+  ChangeMeRespAnswerNewName:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e.ChangeMeResp_NewName
   HelloReq:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.HelloReq
@@ -35,6 +50,9 @@ models:
   PaintersResp:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.PaintersResp
+  Previous:
+    model:
+    - marwan.io/protoc-gen-twirpql/e2e/twirpql.Previous
   TrafficJamReq:
     model:
     - marwan.io/protoc-gen-twirpql/e2e.TrafficJamReq

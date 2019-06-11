@@ -5,7 +5,8 @@ option go_package = "marwan.io/protoc-gen-twirpql/twirpql;twirpql";
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.MethodOptions {
-	Modifiers modifiers = 1991;
+	// ID assigned by protobuf-global-extension-registry@google.com for twirpql project.
+	Modifiers modifiers = 1070;
 }
 
 message Modifiers {
