@@ -47,6 +47,14 @@ func (h *middlewareHooks) hook(ctx context.Context, next graphql.Resolver) (res 
 	if h.hooks.RequestRouted != nil {
 		ctx, err = h.hooks.RequestRouted(ctx)
 		if err != nil {
+			if h.hooks.Error != nil {
+				terr, ok := err.(twirp.Error)
+				if ok {
+					h.hooks.Error(ctx, terr)
+				} else {
+					fmt.Println("Twirp err does not implement twirp.Error:", err)
+				}
+			}
 			return nil, err
 		}
 	}
@@ -56,7 +64,7 @@ func (h *middlewareHooks) hook(ctx context.Context, next graphql.Resolver) (res 
 		if ok {
 			h.hooks.Error(ctx, terr)
 		} else {
-			fmt.Println("Twirp err does not implement twirp.Error:", err)			
+			fmt.Println("Twirp err does not implement twirp.Error:", err)
 		}
 	}
 	return res, err
