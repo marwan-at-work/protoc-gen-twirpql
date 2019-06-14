@@ -63,10 +63,11 @@ func (m *Plugin) GenerateCode(data *codegen.Data) error {
 	}
 
 	return templates.Render(templates.Options{
-		Template:    tmpl,
-		PackageName: data.Config.Resolver.Package,
-		Filename:    data.Config.Resolver.Filename,
-		Data:        resolverBuild,
+		GeneratedHeader: true,
+		Template:        tmpl,
+		PackageName:     data.Config.Resolver.Package,
+		Filename:        data.Config.Resolver.Filename,
+		Data:            resolverBuild,
 		Funcs: template.FuncMap{
 			"hasPrefix": hasPrefix,
 			"isEmpty":   m.isEmpty,

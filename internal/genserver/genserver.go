@@ -32,10 +32,11 @@ func (m *Plugin) GenerateCode(data *codegen.Data) error {
 	}
 
 	return templates.Render(templates.Options{
-		Template:    tmpl,
-		PackageName: "twirpql", // TODO: dynamic package name
-		Filename:    m.filename,
-		Data:        serverBuild,
+		GeneratedHeader: true,
+		Template:        tmpl,
+		PackageName:     "twirpql", // TODO: dynamic package name
+		Filename:        m.filename,
+		Data:            serverBuild,
 	})
 }
 
