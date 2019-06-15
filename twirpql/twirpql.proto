@@ -11,4 +11,5 @@ extend google.protobuf.MethodOptions {
 
 message Modifiers {
 	bool mutation = 1;
+	bool skip = 2;
 }

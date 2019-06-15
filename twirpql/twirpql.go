@@ -347,6 +347,9 @@ func (tql *twirpql) getMethods(protoMethods []pgs.Method) ([]*method, []*method)
 	}
 
 	for _, pm := range protoMethods {
+		if tql.isSkipped(pm) {
+			continue
+		}
 		var m method
 		m.Name = pm.Name().LowerCamelCase().String()
 		// TODO: make oneOf fields a scalar in inputs
@@ -366,6 +369,16 @@ func (tql *twirpql) getMethods(protoMethods []pgs.Method) ([]*method, []*method)
 }
 
 func (tql *twirpql) isMutation(pm pgs.Method) bool {
+	val := getModifiers(pm)
+	return val.GetMutation()
+}
+
+func (tql *twirpql) isSkipped(pm pgs.Method) bool {
+	val := getModifiers(pm)
+	return val.GetSkip()
+}
+
+func getModifiers(pm pgs.Method) *Modifiers {
 	opts := pm.Descriptor().GetOptions()
 	if proto.HasExtension(opts, E_Modifiers) {
 		mut, err := proto.GetExtension(opts, E_Modifiers)
@@ -374,9 +387,9 @@ func (tql *twirpql) isMutation(pm pgs.Method) bool {
 		if !ok {
 			panic(fmt.Sprintf("invalid mutation type: %T\n", mut))
 		}
-		return val.GetMutation()
+		return val
 	}
-	return false
+	return nil
 }
 
 func (tql *twirpql) setType(msg pgs.Message) {
