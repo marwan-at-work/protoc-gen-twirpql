@@ -1,15 +1,15 @@
 syntax = "proto3";
-package twirpql;
-option go_package = "marwan.io/protoc-gen-twirpql/twirpql;twirpql";
+package twirpql.options;
+option go_package = "marwan.io/protoc-gen-twirpql/options;options";
 
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.MethodOptions {
 	// ID assigned by protobuf-global-extension-registry@google.com for twirpql project.
-	Modifiers modifiers = 1070;
+	RPC rpc = 1070;
 }
 
-message Modifiers {
+message RPC {
 	bool mutation = 1;
 	bool skip = 2;
 }

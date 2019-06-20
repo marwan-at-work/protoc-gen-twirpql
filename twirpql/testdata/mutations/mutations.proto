@@ -2,12 +2,12 @@ syntax = "proto3";
 package mixed;
 option go_package = "mixed";
 
-import "twirpql.proto";
+import "options.proto";
 
 service Service {
     rpc Hello(HelloMsg) returns (HelloMsg);
     rpc Goodbye(HelloMsg) returns (HelloMsg) {
-        option (twirpql.modifiers) = {
+        option (twirpql.options.rpc) = {
             mutation: true;
         };
     };

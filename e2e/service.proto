@@ -3,7 +3,7 @@ package e2e;
 option go_package = "e2e";
 
 import "painters/painters.proto";
-import "twirpql.proto";
+import "options.proto";
 
 service Service {
   rpc Hello(HelloReq) returns (HelloResp);
@@ -12,7 +12,7 @@ service Service {
   rpc Translate(TranslateReq) returns (TranslateResp);
   rpc Bread(BreadReq) returns (BreadResp);
   rpc ChangeMe(ChangeMeReq) returns (ChangeMeResp) {
-    option (twirpql.modifiers) = {
+    option (twirpql.options.rpc) = {
       mutation: true;
     };
   };

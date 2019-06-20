@@ -131,7 +131,7 @@ func TestBread(t *testing.T) {
 	require.Equal(t, s.breadReq.GetCount(), int64(3))
 }
 
-func TestChangeMe(t *testing.T) {
+func TestMutations(t *testing.T) {
 	s := &service{changeResp: &e2e.ChangeMeResp{
 		Name: "james",
 		Previous: map[string]*e2e.ChangeMeResp{
