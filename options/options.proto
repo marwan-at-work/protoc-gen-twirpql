@@ -12,4 +12,5 @@ extend google.protobuf.MethodOptions {
 message RPC {
 	bool mutation = 1;
 	bool skip = 2;
+	repeated string respondsWith = 3;
 }

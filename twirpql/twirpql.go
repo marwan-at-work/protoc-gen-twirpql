@@ -53,6 +53,14 @@ type twirpql struct {
 	unions     map[string]*union
 	unionNames map[string]bool
 
+	// responseUnions represent the name
+	// of all the RPCs that want their
+	// responses combined with an error type
+	// This way, the resolver can replace
+	// a response with the error type
+	// instead of actually returning the error.
+	responseUnions map[string]string
+
 	// an empty type keeps track of empty returns
 	// because GraphQL Types can't be empty
 	// and therefore we need to inject a dummy
@@ -136,6 +144,7 @@ func New(importPath string) pgs.Module {
 		mapImports:     map[string]struct{}{},
 		unions:         map[string]*union{},
 		unionNames:     map[string]bool{},
+		responseUnions: map[string]string{},
 		gqlTypes:       gqlconfig.TypeMap{},
 		tmpl:           template.Must(template.New("").Funcs(schemaFuncs).Parse(schemaTemplate)),
 		modname:        importPath,
@@ -325,7 +334,7 @@ func (tql *twirpql) initGql(svcName string) {
 		cfg,
 		api.NoPlugins(),
 		api.AddPlugin(modelgen.New()),
-		api.AddPlugin(genresolver.New(svcName, tql.gopkgname, emptys, tql.maps, tql.unionNames)),
+		api.AddPlugin(genresolver.New(svcName, tql.gopkgname, emptys, tql.maps, tql.unionNames, tql.responseUnions)),
 		api.AddPlugin(genserver.New(tql.path("server.go"), tql.modname, svcName)),
 	)
 	must(err)
@@ -359,7 +368,11 @@ func (tql *twirpql) getMethods(protoMethods []pgs.Method) ([]*method, []*method)
 			tql.setInput(pm.Input())
 			m.Request = tql.formatQueryInput(pm.Input())
 		}
-		m.Response = tql.getQualifiedName(pm.Output())
+		if tql.hasResponseCombination(pm) {
+			m.Response = tql.setResponseCombination(pm)
+		} else {
+			m.Response = tql.getQualifiedName(pm.Output())
+		}
 		if tql.isMutation(pm) {
 			mutations = append(mutations, &m)
 		} else {
@@ -367,6 +380,39 @@ func (tql *twirpql) getMethods(protoMethods []pgs.Method) ([]*method, []*method)
 		}
 	}
 	return methods, mutations
+}
+
+func (tql *twirpql) setResponseCombination(m pgs.Method) string {
+	rpc := getModifiers(m)
+	typeName := rpc.GetRespondsWith()[0]
+	f := m.File()
+	var msg pgs.Message
+	for _, m := range f.Messages() {
+		if typeName == m.Name().String() {
+			msg = m
+		}
+	}
+	if msg == nil {
+		panic(typeName + " is not defined in proto file")
+	}
+	tql.setType(msg)
+	responseName := tql.getQualifiedName(m.Output())
+	unionName := responseName + "Set"
+	tql.unions[unionName] = &union{
+		Name:  unionName,
+		Types: []string{responseName, typeName},
+	}
+	tql.responseUnions[m.Name().UpperCamelCase().String()] = typeName
+	importpath := tql.destimportpath + "/twirpql"
+	tql.gqlTypes[unionName] = gqlconfig.TypeMapEntry{
+		Model: gqlconfig.StringList{importpath + "." + "unionMask"},
+	}
+	return unionName
+}
+
+func (tql *twirpql) hasResponseCombination(m pgs.Method) bool {
+	rpc := getModifiers(m)
+	return len(rpc.GetRespondsWith()) > 0
 }
 
 func (tql *twirpql) isMutation(pm pgs.Method) bool {
@@ -382,11 +428,11 @@ func (tql *twirpql) isSkipped(pm pgs.Method) bool {
 func getModifiers(pm pgs.Method) *options.RPC {
 	opts := pm.Descriptor().GetOptions()
 	if proto.HasExtension(opts, options.E_Rpc) {
-		mut, err := proto.GetExtension(opts, options.E_Rpc)
+		rpc, err := proto.GetExtension(opts, options.E_Rpc)
 		must(err)
-		val, ok := mut.(*options.RPC)
+		val, ok := rpc.(*options.RPC)
 		if !ok {
-			panic(fmt.Sprintf("invalid mutation type: %T\n", mut))
+			panic(fmt.Sprintf("invalid rpc type: %T\n", rpc))
 		}
 		return val
 	}
@@ -422,12 +468,12 @@ func (tql *twirpql) getUnionFields(msg pgs.Message) []*serviceField {
 			Types: unionTypes,
 		}
 		importpath := tql.destimportpath + "/twirpql"
-		tql.gqlTypes[tql.getUnionName(oo)] = gqlconfig.TypeMapEntry{
+		tql.gqlTypes[unionName] = gqlconfig.TypeMapEntry{
 			Model: gqlconfig.StringList{importpath + "." + "unionMask"},
 		}
 		var sf serviceField
 		sf.Name = oo.Name().String()
-		sf.Type = tql.getUnionName(oo)
+		sf.Type = unionName
 		sff = append(sff, &sf)
 	}
 	return sff

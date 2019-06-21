@@ -16,8 +16,9 @@ var tmpl = `
 {{ reserveImport "github.com/99designs/gqlgen/graphql" }}
 {{ reserveImport "github.com/99designs/gqlgen/graphql/introspection" }}
 {{ $serviceName := .ServiceName }}
+{{ $servicePackageName := .ServicePackageName }}
 type {{.ResolverType}} struct {
-    {{.ServicePackageName}}.{{$serviceName}}
+    {{$servicePackageName}}.{{$serviceName}}
 }
 
 {{ range $object := .Objects -}}
@@ -49,6 +50,20 @@ type {{.ResolverType}} struct {
 					return obj.Get{{$field.GoFieldName}}(), nil
 				{{ else if (isUnion ($field.GoFieldName)) }}
 					return obj.Get{{$field.GoFieldName}}(), nil
+				{{ else if (isResponseUnion ($field.GoFieldName)) }}
+				resp, err := r.{{$serviceName}}.{{$field.GoFieldName}}(ctx, {{$reqArg}})
+				if err != nil {
+					{{ $errorTypeName := (responseUnionName ($field.GoFieldName)) }}
+					if errval, ok := err.(interface {
+						{{$errorTypeName}}() *{{$servicePackageName}}.{{$errorTypeName}}
+					}); ok {
+						newresp := errval.{{$errorTypeName}}()
+						if newresp != nil {
+							return newresp, nil
+						}
+					}
+				}
+				return resp, err
 				{{- else -}}
 				return r.{{$serviceName}}.{{$field.GoFieldName}}(ctx, {{$reqArg}})
 				{{ end -}}

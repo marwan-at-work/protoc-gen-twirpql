@@ -15,22 +15,25 @@ func New(
 	emptys []string,
 	scalars map[string]string,
 	unions map[string]bool,
+	responseUnions map[string]string,
 ) plugin.Plugin {
 	return &Plugin{
-		ServiceName: serviceName,
-		PackageName: pkgName,
-		Emptys:      emptys,
-		Scalars:     scalars,
-		Unions:      unions,
+		ServiceName:    serviceName,
+		PackageName:    pkgName,
+		Emptys:         emptys,
+		Scalars:        scalars,
+		Unions:         unions,
+		ResponseUnions: responseUnions,
 	}
 }
 
 type Plugin struct {
-	ServiceName string
-	PackageName string
-	Emptys      []string
-	Scalars     map[string]string
-	Unions      map[string]bool
+	ServiceName    string
+	PackageName    string
+	Emptys         []string
+	Scalars        map[string]string
+	Unions         map[string]bool
+	ResponseUnions map[string]string
 }
 
 func (m *Plugin) isEmpty(f *codegen.Field) bool {
@@ -81,6 +84,13 @@ func (m *Plugin) GenerateCode(data *codegen.Data) error {
 			"isUnion": func(s string) bool {
 				_, ok := m.Unions[s]
 				return ok
+			},
+			"isResponseUnion": func(s string) bool {
+				_, ok := m.ResponseUnions[s]
+				return ok
+			},
+			"responseUnionName": func(s string) string {
+				return m.ResponseUnions[s]
 			},
 		},
 	})
