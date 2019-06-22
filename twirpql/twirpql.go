@@ -89,6 +89,8 @@ type twirpql struct {
 	// like map[string]*ptypes.Timestamp
 	mapImports map[string]struct{}
 
+	sdl string
+
 	// gqlTypes are specific for the gqlgen config file
 	// so that we make all the input/output GraphQL
 	// types point to the generated .pb.go types.
@@ -191,10 +193,14 @@ func (tql *twirpql) Execute(targets map[string]pgs.File, pkgs map[string]pgs.Pac
 		} else {
 			tql.destimportpath = tql.goList(".")
 		}
+		var schemaBuffer bytes.Buffer
 		f, err := os.Create(tql.path("schema.graphql"))
 		must(err)
 		defer f.Close()
-		tql.generateSchema(targetFile, f)
+		tql.generateSchema(targetFile, io.MultiWriter(&schemaBuffer, f))
+		if tql.isFederated(targetFile) {
+			tql.sdl = strings.Replace(schemaBuffer.String(), "type Query", "extend type Query", 1)
+		}
 	}
 
 	if len(tql.maps) > 0 {
@@ -284,6 +290,20 @@ func (tql *twirpql) generateSchema(f pgs.File, out io.Writer) {
 	for _, v := range tql.unions {
 		gqlFile.Unions = append(gqlFile.Unions, v)
 	}
+	if tql.isFederated(f) {
+		gqlFile.Service.Methods = append(gqlFile.Service.Methods, &method{
+			Name:     "_service",
+			Request:  "",
+			Response: "_Service",
+		})
+		gqlFile.Types = append(gqlFile.Types, &serviceType{
+			Name: "_Service",
+			Fields: []*serviceField{&serviceField{
+				Name: "sdl",
+				Type: "String",
+			}},
+		})
+	}
 
 	var buf bytes.Buffer
 
@@ -334,7 +354,15 @@ func (tql *twirpql) initGql(svcName string) {
 		cfg,
 		api.NoPlugins(),
 		api.AddPlugin(modelgen.New()),
-		api.AddPlugin(genresolver.New(svcName, tql.gopkgname, emptys, tql.maps, tql.unionNames, tql.responseUnions)),
+		api.AddPlugin(genresolver.New(
+			svcName,
+			tql.gopkgname,
+			emptys,
+			tql.maps,
+			tql.unionNames,
+			tql.responseUnions,
+			tql.sdl,
+		)),
 		api.AddPlugin(genserver.New(tql.path("server.go"), tql.modname, svcName)),
 	)
 	must(err)
@@ -418,6 +446,20 @@ func (tql *twirpql) hasResponseCombination(m pgs.Method) bool {
 func (tql *twirpql) isMutation(pm pgs.Method) bool {
 	val := getModifiers(pm)
 	return val.GetMutation()
+}
+
+func (tql *twirpql) isFederated(f pgs.File) bool {
+	opts := f.Descriptor().GetOptions()
+	if proto.HasExtension(opts, options.E_Schema) {
+		mut, err := proto.GetExtension(opts, options.E_Schema)
+		must(err)
+		val, ok := mut.(*options.Schema)
+		if !ok {
+			panic(fmt.Sprintf("invalid mutation type: %T\n", mut))
+		}
+		return val.GetFederated()
+	}
+	return false
 }
 
 func (tql *twirpql) isSkipped(pm pgs.Method) bool {

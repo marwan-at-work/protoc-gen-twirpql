@@ -39,7 +39,6 @@ type formatter struct {
 
 func (f *formatter) print() {
 	f.sortDeclarations()
-	f.printHeader()
 	f.printQuery()
 	f.printMutation()
 	f.printTypes()

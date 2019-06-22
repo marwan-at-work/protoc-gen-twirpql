@@ -1,7 +1,3 @@
-schema {
-	query: Query
-}
-
 type Query {
 	Hello(req: HelloReq): HelloResp!
 	TrafficJam(req: TrafficJamReq): TrafficJamResp!

@@ -17,6 +17,8 @@ var tmpl = `
 {{ reserveImport "github.com/99designs/gqlgen/graphql/introspection" }}
 {{ $serviceName := .ServiceName }}
 {{ $servicePackageName := .ServicePackageName }}
+{{ $federated := .Federated }}
+{{ $sdl := .SDL }}
 type {{.ResolverType}} struct {
     {{$servicePackageName}}.{{$serviceName}}
 }
@@ -40,7 +42,9 @@ type {{.ResolverType}} struct {
 				{{- if (hasPrefix ($field.ShortResolverDeclaration) "(ctx context.Context)") -}}
 					{{ $reqArg = "nil" }}
 				{{ end -}}
-				{{- if (isEmpty $field) -}}
+				{{- if (and $federated (eq ($field.GoFieldName) "_service")) -}}
+				return &_Service{Sdl: {{q $sdl}}}, nil
+				{{ else if (isEmpty $field) }}
 				_, err := r.{{$serviceName}}.{{$field.GoFieldName}}(ctx, {{$reqArg}})
 				if err != nil {
 					return nil, err

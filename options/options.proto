@@ -9,6 +9,15 @@ extend google.protobuf.MethodOptions {
 	RPC rpc = 1070;
 }
 
+extend google.protobuf.FileOptions {
+  // ID assigned by protobuf-global-extension-registry@google.com for twirpql.
+  Schema schema = 1070;
+}
+
+message Schema {
+	bool federated = 1;
+}
+
 message RPC {
 	bool mutation = 1;
 	bool skip = 2;

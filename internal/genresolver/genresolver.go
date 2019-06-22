@@ -1,6 +1,7 @@
 package genresolver
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -16,6 +17,7 @@ func New(
 	scalars map[string]string,
 	unions map[string]bool,
 	responseUnions map[string]string,
+	sdl string,
 ) plugin.Plugin {
 	return &Plugin{
 		ServiceName:    serviceName,
@@ -24,6 +26,7 @@ func New(
 		Scalars:        scalars,
 		Unions:         unions,
 		ResponseUnions: responseUnions,
+		SDL:            sdl,
 	}
 }
 
@@ -34,6 +37,7 @@ type Plugin struct {
 	Scalars        map[string]string
 	Unions         map[string]bool
 	ResponseUnions map[string]string
+	SDL            string
 }
 
 func (m *Plugin) isEmpty(f *codegen.Field) bool {
@@ -63,6 +67,8 @@ func (m *Plugin) GenerateCode(data *codegen.Data) error {
 		ResolverType:       data.Config.Resolver.Type,
 		ServiceName:        m.ServiceName,
 		ServicePackageName: m.PackageName,
+		SDL:                m.SDL,
+		Federated:          m.SDL != "",
 	}
 
 	return templates.Render(templates.Options{
@@ -92,6 +98,9 @@ func (m *Plugin) GenerateCode(data *codegen.Data) error {
 			"responseUnionName": func(s string) string {
 				return m.ResponseUnions[s]
 			},
+			"q": func(s string) string {
+				return fmt.Sprintf("%q", s)
+			},
 		},
 	})
 }
@@ -103,6 +112,8 @@ type ResolverBuild struct {
 	ResolverType       string
 	ServiceName        string
 	ServicePackageName string
+	SDL                string
+	Federated          bool
 }
 
 func hasPrefix(s, prefix string) bool {
