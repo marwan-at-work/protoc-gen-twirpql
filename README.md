@@ -4,7 +4,7 @@ A Protoc plugin that generates a GraphQL layer on top of Twirp servers.
 
 ## Features 
 
-- [x] Generates a full GraphQL server implementation based on [gqlgen](https://github.com/99desgins/gqlgen)
+- [x] Generates a full GraphQL server implementation based on [gqlgen](https://github.com/99designs/gqlgen)
 
 - [x] Marshals/Unmarshals ProtoBuf enums (ints) to GraphQL enums (strings). 
 
