@@ -1,6 +1,9 @@
 type Query {
 	Hello(req: HelloReq): HelloResp!
 	TrafficJam(req: TrafficJamReq): TrafficJamResp!
+	"""
+	Good bye says good bye
+	"""
 	GoodBye: GoodByeResp!
 }
 
@@ -14,11 +17,17 @@ type HelloResp {
 	text: String!
 }
 
+"""
+TrafficJamResp is the response to a traffic jam
+"""
 type TrafficJamResp {
 	next: TrafficLight!
 	height: Float!
 }
 
+"""
+HelloReq is some input
+"""
 input HelloReq {
 	name: String!
 }
@@ -27,6 +36,9 @@ input TrafficJamReq {
 	color: TrafficLight!
 }
 
+"""
+TrafficLight has 3 lights
+"""
 enum TrafficLight {
 	RED
 	YELLOW

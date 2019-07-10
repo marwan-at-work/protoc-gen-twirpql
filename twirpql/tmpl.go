@@ -15,6 +15,9 @@ const schemaTemplate = `
 {{ if (gt (len .Service.Methods) 0) }}
 
 type Query { {{range .Service.Methods}}
+    """
+    {{.Doc}}
+    """
     {{.Name}}{{.Request}}: {{.Response}}!{{end}}
 }
 
@@ -29,7 +32,13 @@ type Mutation { {{range .Service.Mutations}}
 {{ end }}
 
 {{range .Types}}
+"""
+{{ .Doc }}
+"""
 type {{.Name}} { {{- range .Fields}}
+    """
+    {{ .Doc }}
+    """
     {{.Name}}: {{.Type}}!{{end}}
     {{- if (eq (len .Fields) 0) }}
     responseMessage: String!
@@ -37,13 +46,25 @@ type {{.Name}} { {{- range .Fields}}
 }
 {{end}}
 {{range .Inputs}}
+"""
+{{ .Doc }}
+"""
 input {{.Name}} { {{range .Fields}}
+    """
+    {{ .Doc }}
+    """
     {{.Name}}: {{.Type}}!{{end}}
 }
 {{end}}
 {{range .Enums}}
+"""
+{{ .Doc }}
+"""
 enum {{.Name}} { {{range .Fields}}
-    {{.}}{{end}}
+    """
+    {{ .Doc }}
+    """
+    {{.Name}}{{end}}
 }{{end}}
 {{range .Scalars}}
 scalar {{.}}

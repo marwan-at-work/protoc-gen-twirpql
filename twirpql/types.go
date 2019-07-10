@@ -16,21 +16,25 @@ type service struct {
 
 type enums struct {
 	Name   string
-	Fields []string
+	Fields []*serviceField
+	Doc    string
 }
 
 type serviceType struct {
 	Name   string
 	Fields []*serviceField
+	Doc    string
 }
 
 type serviceField struct {
 	Name string
 	Type string
+	Doc  string
 }
 
 type method struct {
 	Name, Request, Response string
+	Doc                     string
 }
 
 type union struct {

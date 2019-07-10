@@ -93,5 +93,4 @@ scalar Translations
 scalar Words
 
 union BreadRespAnswer = BreadRespAnswerName | BreadRespAnswerToasted
-
 union ChangeMeRespAnswer = ChangeMeRespAnswerChanged | ChangeMeRespAnswerNewName

@@ -131,7 +131,8 @@ type enumData struct {
 	Name        string
 	ImportPath  string
 	PackageName string
-	Values      []string
+	Values      []*serviceField
+	Doc         string
 }
 
 // New configures the module with an instance of ModuleBase
@@ -282,7 +283,11 @@ func (tql *twirpql) generateSchema(f pgs.File, out io.Writer) {
 		gqlFile.Types = append(gqlFile.Types, v)
 	}
 	for k, v := range tql.enums {
-		gqlFile.Enums = append(gqlFile.Enums, &enums{Name: k, Fields: v.Values})
+		gqlFile.Enums = append(gqlFile.Enums, &enums{
+			Name:   k,
+			Fields: v.Values,
+			Doc:    v.Doc,
+		})
 	}
 	for k := range tql.maps {
 		gqlFile.Scalars = append(gqlFile.Scalars, k)
@@ -390,6 +395,7 @@ func (tql *twirpql) getMethods(protoMethods []pgs.Method) ([]*method, []*method)
 		}
 		var m method
 		m.Name = pm.Name().LowerCamelCase().String()
+		m.Doc = pm.SourceCodeInfo().LeadingComments()
 		// TODO: make oneOf fields a scalar in inputs
 		emptyInput := len(pm.Input().NonOneOfFields()) == 0
 		if !emptyInput {
@@ -488,6 +494,7 @@ func (tql *twirpql) setType(msg pgs.Message) {
 	}
 	var i serviceType
 	i.Name = typeName
+	i.Doc = msg.SourceCodeInfo().LeadingComments()
 	tql.types[i.Name] = &i
 	tql.setGraphQLType(i.Name, msg)
 	i.Fields = tql.getFields(msg.NonOneOfFields(), true)
@@ -565,6 +572,7 @@ func (tql *twirpql) setInput(msg pgs.Message) {
 	}
 	var i serviceType
 	i.Name = tql.getInputName(msg)
+	i.Doc = msg.SourceCodeInfo().LeadingComments()
 	tql.inputs[i.Name] = &i
 	tql.setGraphQLType(i.Name, msg)
 	// TODO: make oneOf fields scalars.
@@ -629,12 +637,16 @@ func (tql *twirpql) setEnum(protoEnum pgs.Enum) {
 	if _, ok := tql.enums[name]; ok {
 		return
 	}
-	vals := []string{}
+	vals := []*serviceField{}
 	for _, v := range protoEnum.Values() {
-		vals = append(vals, v.Name().String())
+		vals = append(vals, &serviceField{
+			Name: v.Name().String(),
+			Doc:  v.SourceCodeInfo().LeadingComments(),
+		})
 	}
 	tql.enums[name] = &enumData{
 		Name:        tql.ctx.Name(protoEnum).String(),
+		Doc:         protoEnum.SourceCodeInfo().LeadingComments(),
 		ImportPath:  tql.deduceImportPath(protoEnum),
 		PackageName: tql.ctx.PackageName(protoEnum.File()).String(),
 		Values:      vals,
@@ -707,6 +719,7 @@ func (tql *twirpql) writeUnionMask() {
 func (tql *twirpql) getField(pf pgs.Field, isType bool) *serviceField {
 	var f serviceField
 	f.Name = pf.Name().String()
+	f.Doc = pf.SourceCodeInfo().LeadingComments()
 	pt := pf.Type().ProtoType().Proto()
 	var tmp string
 	switch pt {
