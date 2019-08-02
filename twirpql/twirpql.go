@@ -663,9 +663,9 @@ func (tql *twirpql) setGraphQLEnum(name string, enum pgs.Enum) {
 }
 
 func (tql *twirpql) setBytes(fieldName string, f pgs.Field) {
-	tql.maps[fieldName] = tql.ctx.Type(f).Value().String()
-	tql.gqlTypes[fieldName] = gqlconfig.TypeMapEntry{
-		Model: gqlconfig.StringList{tql.destimportpath + "/twirpql." + fieldName},
+	tql.maps["ProtoBytes"] = tql.ctx.Type(f).Value().String()
+	tql.gqlTypes["ProtoBytes"] = gqlconfig.TypeMapEntry{
+		Model: gqlconfig.StringList{tql.destimportpath + "/twirpql." + "ProtoBytes"},
 	}
 }
 
@@ -746,7 +746,7 @@ func (tql *twirpql) getField(pf pgs.Field, isType bool) *serviceField {
 		tql.setEnum(pf.Type().Enum())
 		tmp = tql.getQualifiedName(pf.Type().Enum())
 	case 12:
-		tmp = strings.Title(f.Name)
+		tmp = "ProtoBytes"
 		tql.setBytes(tmp, pf)
 	default:
 		tmp = protoTypesToGqlTypes[pt.String()]
