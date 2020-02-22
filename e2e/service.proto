@@ -13,7 +13,7 @@ service Service {
   rpc Bread(BreadReq) returns (BreadResp);
   rpc ChangeMe(ChangeMeReq) returns (ChangeMeResp) {
     option (twirpql.options.rpc) = {
-      mutation: true;
+      mutation: true
     };
   };
 }
@@ -28,6 +28,7 @@ message HelloResp {
 
 message TrafficJamReq {
   TrafficLight color = 1;
+  repeated TrafficLight trafficLights = 2;
 }
 
 enum TrafficLight {

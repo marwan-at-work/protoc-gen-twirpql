@@ -743,8 +743,12 @@ func (tql *twirpql) getField(pf pgs.Field, isType bool) *serviceField {
 			}
 		}
 	case 14:
-		tql.setEnum(pf.Type().Enum())
-		tmp = tql.getQualifiedName(pf.Type().Enum())
+		e := pf.Type().Enum()
+		if pf.Type().IsRepeated() {
+			e = pf.Type().Element().Enum()
+		}
+		tql.setEnum(e)
+		tmp = tql.getQualifiedName(e)
 	case 12:
 		tmp = "ProtoBytes"
 		tql.setBytes(tmp, pf)

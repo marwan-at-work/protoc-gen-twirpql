@@ -43,7 +43,8 @@ func TestTrafficJam(t *testing.T) {
 		"operationName": "q",
 		"variables": {
 			"req": {
-				"color": "GREEN"
+				"color": "GREEN",
+				"trafficLights": ["YELLOW", "RED"]
 			}
 		},
 		"query": "query q($req: TrafficJamReq) {\n  trafficJam(req: $req) {\n next }\n}\n"
@@ -52,6 +53,7 @@ func TestTrafficJam(t *testing.T) {
 	h.ServeHTTP(w, req)
 
 	require.Equal(t, e2e.TrafficLight_GREEN, s.trafficJamReq.GetColor(), "Expected GraphQL request to populate Twirp Object")
+	require.Equal(t, []e2e.TrafficLight{e2e.TrafficLight_YELLOW, e2e.TrafficLight_RED}, s.trafficJamReq.GetTrafficLights(), "Expected repeated enums to be equal")
 
 	expected := `{"data":{"trafficJam":{"next":"YELLOW"}}}`
 

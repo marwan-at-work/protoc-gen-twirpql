@@ -74,6 +74,7 @@ input HelloReq {
 
 input TrafficJamReq {
 	color: TrafficLight!
+	trafficLights: [TrafficLight]!
 }
 
 input TranslateReq {

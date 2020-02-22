@@ -447,6 +447,7 @@ input HelloReq {
 
 input TrafficJamReq {
 	color: TrafficLight!
+	trafficLights: [TrafficLight]!
 }
 
 input TranslateReq {
@@ -2667,6 +2668,12 @@ func (ec *executionContext) unmarshalInputTrafficJamReq(ctx context.Context, obj
 			if err != nil {
 				return it, err
 			}
+		case "trafficLights":
+			var err error
+			it.TrafficLights, err = ec.unmarshalNTrafficLight2ᚕmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficLight(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -3637,6 +3644,63 @@ func (ec *executionContext) marshalNTrafficLight2marwanᚗioᚋprotocᚑgenᚑtw
 	return ec._TrafficLight(ctx, sel, &v)
 }
 
+func (ec *executionContext) unmarshalNTrafficLight2ᚕmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficLight(ctx context.Context, v interface{}) ([]e2e.TrafficLight, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]e2e.TrafficLight, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalOTrafficLight2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficLight(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNTrafficLight2ᚕmarwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficLight(ctx context.Context, sel ast.SelectionSet, v []e2e.TrafficLight) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		rctx := &graphql.ResolverContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOTrafficLight2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficLight(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
 func (ec *executionContext) marshalNTranslateResp2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateResp(ctx context.Context, sel ast.SelectionSet, v e2e.TranslateResp) graphql.Marshaler {
 	return ec._TranslateResp(ctx, sel, &v)
 }
@@ -3987,6 +4051,14 @@ func (ec *executionContext) unmarshalOTrafficJamReq2ᚖmarwanᚗioᚋprotocᚑge
 	}
 	res, err := ec.unmarshalOTrafficJamReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficJamReq(ctx, v)
 	return &res, err
+}
+
+func (ec *executionContext) unmarshalOTrafficLight2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficLight(ctx context.Context, v interface{}) (e2e.TrafficLight, error) {
+	return ec.unmarshalInputTrafficLight(ctx, v)
+}
+
+func (ec *executionContext) marshalOTrafficLight2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTrafficLight(ctx context.Context, sel ast.SelectionSet, v e2e.TrafficLight) graphql.Marshaler {
+	return ec._TrafficLight(ctx, sel, &v)
 }
 
 func (ec *executionContext) unmarshalOTranslateReq2marwanᚗioᚋprotocᚑgenᚑtwirpqlᚋe2eᚐTranslateReq(ctx context.Context, v interface{}) (e2e.TranslateReq, error) {
