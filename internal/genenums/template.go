@@ -13,7 +13,7 @@ import (
 	{{ range .Imports }}
 	"{{.}}"{{ end }}
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/vektah/gqlparser/ast"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 {{ range .Enums }}
 func (ec *executionContext) _{{ .Name }}(ctx context.Context, sel ast.SelectionSet, v *{{.Pkg}}.{{.GoName}}) graphql.Marshaler {

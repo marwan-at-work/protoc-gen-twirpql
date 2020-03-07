@@ -37,6 +37,7 @@ func (m *Plugin) GenerateCode(data *codegen.Data) error {
 		PackageName:     "twirpql", // TODO: dynamic package name
 		Filename:        m.filename,
 		Data:            serverBuild,
+		Packages:        data.Config.Packages,
 	})
 }
 

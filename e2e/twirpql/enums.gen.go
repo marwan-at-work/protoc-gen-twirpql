@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/vektah/gqlparser/ast"
+	"github.com/vektah/gqlparser/v2/ast"
 	"marwan.io/protoc-gen-twirpql/e2e"
 )
 

@@ -11,8 +11,8 @@ var tmpl = `
 {{ reserveImport "bytes"  }}
 
 {{ reserveImport "github.com/99designs/gqlgen/handler" }}
-{{ reserveImport "github.com/vektah/gqlparser" }}
-{{ reserveImport "github.com/vektah/gqlparser/ast" }}
+{{ reserveImport "github.com/vektah/gqlparser/v2" }}
+{{ reserveImport "github.com/vektah/gqlparser/v2/ast" }}
 {{ reserveImport "github.com/99designs/gqlgen/graphql" }}
 {{ reserveImport "github.com/99designs/gqlgen/graphql/introspection" }}
 {{ $serviceName := .ServiceName }}

@@ -9,6 +9,7 @@ model:
 resolver:
   filename: twirpql/resolver.go
   type: Resolver
+  dir: ""
 autobind: []
 models:
   BreadReq:

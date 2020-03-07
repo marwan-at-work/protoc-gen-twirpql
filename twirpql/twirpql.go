@@ -341,7 +341,7 @@ func (tql *twirpql) touchConfig(out io.Writer) {
 	var cfg gqlconfig.Config
 	cfg.SchemaFilename = gqlconfig.StringList{tql.path("schema.graphql")}
 	cfg.Exec = gqlconfig.PackageConfig{Filename: tql.path("generated.go")}
-	cfg.Resolver = gqlconfig.PackageConfig{Filename: tql.path("resolver.go"), Type: "Resolver"}
+	cfg.Resolver = gqlconfig.ResolverConfig{Filename: tql.path("resolver.go"), Type: "Resolver"}
 	cfg.Models = tql.gqlTypes
 	cfg.Model = gqlconfig.PackageConfig{Filename: tql.path("models_gen.go")}
 	must(yaml.NewEncoder(out).Encode(&cfg))

@@ -39,8 +39,8 @@ type middlewareHooks struct {
 func (h *middlewareHooks) hook(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
 	ifc := graphql.GetResolverContext(ctx).Path()
 	if len(ifc) > 0 {
-		queryName, ok := ifc[0].(string)
-		if ok {
+		queryName := ifc.String()
+		if queryName != "" {
 			ctx = ctxsetters.WithMethodName(ctx, strings.Title(queryName))
 		}
 	}
