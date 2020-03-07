@@ -4,12 +4,13 @@ package twirpql
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/99designs/gqlgen/handler"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/twitchtv/twirp"
 	"github.com/twitchtv/twirp/ctxsetters"
 	"marwan.io/protoc-gen-twirpql/e2e"
@@ -18,60 +19,41 @@ import (
 // Playground is a proxy to github.com/99designs/gqlgen/handler.Playground
 // All you need to do is provide a title and the URL Path to the GraphQL handler
 func Playground(title, endpoint string) http.Handler {
-	return handler.Playground(title, endpoint)
+	return playground.Handler(title, endpoint)
 }
 
 // Handler returns a handler to the GraphQL API.
 // Server Hooks are optional but if present, they will
 // be injected as GraphQL middleware.
-func Handler(service e2e.Service, hooks *twirp.ServerHooks, opts ...handler.Option) http.Handler {
+func Handler(service e2e.Service, hooks *twirp.ServerHooks) *handler.Server {
+	es := NewExecutableSchema(Config{Resolvers: &Resolver{service}})
+	srv := handler.New(es)
+	srv.AddTransport(transport.POST{})
+	srv.Use(extension.Introspection{})
 	if hooks == nil {
-		return handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{service}}), opts...)
+		return srv
 	}
-	h := &middlewareHooks{hooks}
-	opts = append([]handler.Option{handler.ResolverMiddleware(h.hook)}, opts...)
-	return handler.GraphQL(
-		NewExecutableSchema(
-			Config{Resolvers: &Resolver{service}},
-		),
-		opts...,
-	)
-}
-
-type middlewareHooks struct {
-	hooks *twirp.ServerHooks
-}
-
-func (h *middlewareHooks) hook(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
-	ifc := graphql.GetResolverContext(ctx).Path()
-	if len(ifc) > 0 {
-		queryName := ifc.String()
-		if queryName != "" {
-			ctx = ctxsetters.WithMethodName(ctx, strings.Title(queryName))
+	srv.AroundFields(func(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
+		f := graphql.GetFieldContext(ctx)
+		parent := f.Parent.Path().String()
+		if parent != "" {
+			return next(ctx)
 		}
-	}
-	if h.hooks.RequestRouted != nil {
-		ctx, err = h.hooks.RequestRouted(ctx)
-		if err != nil {
-			if h.hooks.Error != nil {
-				terr, ok := err.(twirp.Error)
-				if ok {
-					h.hooks.Error(ctx, terr)
-				} else {
-					fmt.Println("Twirp err does not implement twirp.Error:", err)
+		ctx = ctxsetters.WithMethodName(ctx, f.Field.Name)
+		if hooks.RequestRouted != nil {
+			ctx, err = hooks.RequestRouted(ctx)
+			if err != nil {
+				if terr, ok := err.(twirp.Error); ok && hooks.Error != nil {
+					ctx = hooks.Error(ctx, terr)
 				}
+				return nil, err
 			}
-			return nil, err
 		}
-	}
-	res, err = next(ctx)
-	if err != nil && h.hooks.Error != nil {
-		terr, ok := err.(twirp.Error)
-		if ok {
-			h.hooks.Error(ctx, terr)
-		} else {
-			fmt.Println("Twirp err does not implement twirp.Error:", err)
+		res, err = next(ctx)
+		if terr, ok := err.(twirp.Error); ok && hooks.Error != nil {
+			ctx = hooks.Error(ctx, terr)
 		}
-	}
-	return res, err
+		return res, err
+	})
+	return srv
 }
