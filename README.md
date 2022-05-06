@@ -2,6 +2,10 @@
 
 A Protoc plugin that generates a GraphQL layer on top of Twirp servers. 
 
+## Status
+
+There have been a few breaking changes in the upstream dependencies (protobufs and gqlgen) which makes this plugin a bit outdated if not flat out broken. So the go.mod file to pin the versions that would work with this library or feel free to open a PR upgrading to the latest of the two versions. See https://github.com/marwan-at-work/protoc-gen-twirpql/issues/9
+
 ## Features 
 
 - [x] Generates a full GraphQL server implementation based on [gqlgen](https://github.com/99designs/gqlgen)
